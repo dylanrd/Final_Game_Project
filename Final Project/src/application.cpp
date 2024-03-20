@@ -170,15 +170,17 @@ public:
                 } else {
                     glUniform1i(4, GL_FALSE);
                     glUniform1i(5, m_useMaterial);
+                    glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
                 }
                 mesh.draw(m_defaultShader);
             }
 
+            glm::mat4 translationMatrixGround = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-3,0 });
             for (GPUMesh& mesh : road) {
                 m_defaultShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * view * glm::mat4{ 1.0f }));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(glm::mat4 { 1.0f }));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(glm::inverseTranspose(glm::mat4{ 1.0f })));
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * view * translationMatrixGround));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(translationMatrixGround));
+                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(glm::inverseTranspose(translationMatrixGround)));
                 if (mesh.hasTextureCoords()) {
                     m_texture.bind(GL_TEXTURE0);
                     glUniform1i(3, 0);

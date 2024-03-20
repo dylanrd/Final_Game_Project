@@ -1,4 +1,5 @@
 //#include "Image.h"
+#include "camera.h"
 #include "mesh.h"
 #include "texture.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
@@ -27,11 +28,27 @@ public:
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
         , m_texture("resources/checkerboard.png")
     {
+
+
+        Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+        Camera camera2{ &m_window, glm::vec3(1.2f, 1.1f, 1.9f), -glm::vec3(1.2f, 1.1f, 1.9f) };
+
+        light_camera = camera1;
+        camera = camera2;
+        Camera temp = { &m_window };
+        bool cam1 = true;
+
+
+
+
+
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
                 onKeyPressed(key, mods);
             else if (action == GLFW_RELEASE)
                 onKeyReleased(key, mods);
+
+            
         });
         m_window.registerMouseMoveCallback(std::bind(&Application::onMouseMove, this, std::placeholders::_1));
         m_window.registerMouseButtonCallback([this](int button, int action, int mods) {
@@ -41,8 +58,8 @@ public:
                 onMouseReleased(button, mods);
         });
 
-        m_meshes = GPUMesh::loadMeshGPU("resources/dragon.obj");
-
+        m_meshes = GPUMesh::loadMeshGPU("resources/RedBull RB6.obj");
+        m_viewMatrix = camera.viewMatrix();
         try {
             ShaderBuilder defaultBuilder;
             defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
@@ -85,7 +102,9 @@ public:
             // ...
             glEnable(GL_DEPTH_TEST);
 
-            const glm::mat4 mvpMatrix = m_projectionMatrix * m_viewMatrix * m_modelMatrix;
+            camera.updateInput();
+            
+            const glm::mat4 mvpMatrix = m_projectionMatrix * camera.viewMatrix() * m_modelMatrix;
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
@@ -117,7 +136,27 @@ public:
     // mods - Any modifier keys pressed, like shift or control
     void onKeyPressed(int key, int mods)
     {
-        std::cout << "Key pressed: " << key << std::endl;
+        switch (key) {
+        case GLFW_KEY_1:
+            if (!cam1) {
+                temp = light_camera;
+                light_camera = camera;
+                camera = temp;
+                cam1 = true;
+            }
+
+            break;
+        case GLFW_KEY_2:
+            if (cam1) {
+                temp = light_camera;
+                light_camera = camera;
+                camera = temp;
+                cam1 = false;
+            }
+            break;
+        default:
+            break;
+        }
     }
 
     // In here you can handle key releases
@@ -160,10 +199,14 @@ private:
     std::vector<GPUMesh> m_meshes;
     Texture m_texture;
     bool m_useMaterial { true };
-
+    Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    Camera light_camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    Camera temp{ &m_window};
+    bool cam1{ true };
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 0.1f, 30.0f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
+    glm::mat4 viewMatrix = camera.viewMatrix();
     glm::mat4 m_modelMatrix { 1.0f };
 };
 

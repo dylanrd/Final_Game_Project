@@ -1,0 +1,63 @@
+# Blender 4.0.2 MTL File: 'RedBull RB6.blend'
+# www.blender.org
+
+newmtl Body21Mtl.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.062745 0.062745 0.062745
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd redbull-rb6/textures/Body21_diff.png
+map_d redbull-rb6/textures/Body21_diff.png
+
+newmtl Chassis1Mtl.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.062745 0.062745 0.062745
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd redbull-rb6/textures/Chassis1_diff.png
+map_d redbull-rb6/textures/Chassis1_diff.png
+
+newmtl Meshpart1Mtl.002
+Ns 224.444412
+Ka 1.000000 1.000000 1.000000
+Ks 0.180392 0.180392 0.180392
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd redbull-rb6/textures/Meshpart1_diff.png
+map_d redbull-rb6/textures/Meshpart1_diff.png
+
+newmtl Meshpart3Mtl.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.074510 0.074510 0.074510
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd redbull-rb6/textures/Meshpart3_diff.png
+map_d redbull-rb6/textures/Meshpart3_diff.png
+
+newmtl Meshpart4Mtl.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Ks 0.074510 0.074510 0.074510
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+illum 2
+map_Kd redbull-rb6/textures/Meshpart4_diff.png
+map_d redbull-rb6/textures/Meshpart4_diff.png
+
+newmtl Window1Mtl.002
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.373615 0.368591 0.383775
+Ks 0.023550 0.023550 0.023550
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Bump -bm 1.000000 D:/Delftfiles/Q3/CG/Final Project/Downloads/Window1_nmap.png

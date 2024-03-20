@@ -26,7 +26,7 @@ class Application {
 public:
     Application()
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
-        , m_texture("resources/checkerboard.png")
+        , m_texture("resources/Body21_diff.png")
     {
 
 
@@ -35,11 +35,11 @@ public:
 
         light_camera = camera1;
         camera = camera2;
-        Camera temp = { &m_window };
-        bool cam1 = true;
-
-
-
+        temp = { &m_window };
+        cam1 = true;
+        move = 0.f;
+        moving = false;
+        forward = false;
 
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
@@ -59,7 +59,8 @@ public:
         });
 
         m_meshes = GPUMesh::loadMeshGPU("resources/RedBull RB6.obj");
-        m_viewMatrix = camera.viewMatrix();
+        road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
+
         try {
             ShaderBuilder defaultBuilder;
             defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
@@ -83,10 +84,18 @@ public:
     void update()
     {
         int dummyInteger = 0; // Initialized to 0
+     
+      
+        
+
         while (!m_window.shouldClose()) {
+            
+
             // This is your game loop
             // Put your real-time logic and rendering in here
             m_window.updateInput();
+
+           
 
             // Use ImGui for easy input/output of ints, floats, strings, etc...
             ImGui::Begin("Window");
@@ -103,7 +112,18 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
+           
             
+            if (moving) {
+                if (forward) {
+                    move = move + 0.2f;
+                }
+                else {
+                    move = move - 0.2f;
+                }
+            }
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
+            m_modelMatrix = translationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * camera.viewMatrix() * m_modelMatrix;
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
@@ -126,7 +146,25 @@ public:
                 mesh.draw(m_defaultShader);
             }
 
-            // Processes input and swaps the window buffer
+            for (GPUMesh& mesh : road) {
+                m_defaultShader.bind();
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * camera.viewMatrix() * glm::mat4{ 1.0f }));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(glm::mat4 { 1.0f }));
+                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(glm::inverseTranspose(glm::mat4{ 1.0f })));
+                if (mesh.hasTextureCoords()) {
+                    m_texture.bind(GL_TEXTURE0);
+                    glUniform1i(3, 0);
+                    glUniform1i(4, GL_TRUE);
+                    glUniform1i(5, GL_FALSE);
+                }
+                else {
+                    glUniform1i(4, GL_FALSE);
+                    glUniform1i(5, m_useMaterial);
+                }
+                mesh.draw(m_defaultShader);
+            }
+
+
             m_window.swapBuffers();
         }
     }
@@ -154,6 +192,15 @@ public:
                 cam1 = false;
             }
             break;
+
+        case GLFW_KEY_UP:
+            moving = true;
+            forward = true;
+            break;
+        case GLFW_KEY_DOWN:
+            moving = true;
+            forward = false;
+            break;
         default:
             break;
         }
@@ -164,7 +211,14 @@ public:
     // mods - Any modifier keys pressed, like shift or control
     void onKeyReleased(int key, int mods)
     {
-        std::cout << "Key released: " << key << std::endl;
+        switch (key) {
+        case GLFW_KEY_UP:
+            moving = false;
+            break;
+        case GLFW_KEY_DOWN:
+            moving = false;
+            break;
+        }
     }
 
     // If the mouse is moved this function will be called with the x, y screen-coordinates of the mouse
@@ -197,16 +251,21 @@ private:
     Shader m_shadowShader;
 
     std::vector<GPUMesh> m_meshes;
+    std::vector<GPUMesh> road;
     Texture m_texture;
     bool m_useMaterial { true };
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    Camera thirdPersonView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera light_camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera temp{ &m_window};
     bool cam1{ true };
+
+    float move;
+    bool moving;
+    bool forward;
     // Projection and view matrices for you to fill in and use
-    glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 0.1f, 30.0f);
+    glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 100.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
-    glm::mat4 viewMatrix = camera.viewMatrix();
     glm::mat4 m_modelMatrix { 1.0f };
 };
 

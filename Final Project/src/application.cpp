@@ -30,7 +30,7 @@ public:
     {
         carPosition = { 0.f, 0.f, 0.f };
         glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
-        float distanceFromMesh = 25.0f; // How far the camera is from the mesh
+        float distanceFromMesh = 40.0f; // How far the camera is from the mesh
         glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
         glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
 

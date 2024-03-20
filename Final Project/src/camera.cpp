@@ -24,6 +24,11 @@ void Camera::setUserInteraction(bool enabled)
     m_userInteraction = enabled;
 }
 
+void Camera::changePos(const glm::vec3& pos)
+{
+    m_position = pos;
+}
+
 glm::vec3 Camera::cameraPos() const
 {
     return m_position;

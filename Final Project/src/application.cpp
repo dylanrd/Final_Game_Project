@@ -28,19 +28,23 @@ public:
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
         , m_texture("resources/Body21_diff.png")
     {
-
+        carPosition = { 0.f, 0.f, 0.f };
+        glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
+        float distanceFromMesh = 25.0f; // How far the camera is from the mesh
+        glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+        glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
 
         Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
-        Camera camera2{ &m_window, glm::vec3(1.2f, 1.1f, 1.9f), -glm::vec3(1.2f, 1.1f, 1.9f) };
+        Camera camera2{ &m_window, cameraPosition, direction };
 
-        light_camera = camera1;
-        camera = camera2;
+        light_camera = camera2;
+        camera = camera1;
         temp = { &m_window };
         cam1 = true;
         move = 0.f;
         moving = false;
         forward = false;
-
+        
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
@@ -112,19 +116,43 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
-           
-            
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            float distanceFromMesh = 10.0f; // How far the camera is from the mesh
+            glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
+
+            // Calculate the up vector (usually (0, 1, 0) for a top-down view)
+            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+            // Calculate the right vector (cross product of direction and up)
+            glm::vec3 right = glm::normalize(glm::cross(up, direction));
+
+            // Recalculate the up vector (cross product of right and direction)
+            up = glm::cross(direction, right);
+
+            // Create the view matrix
+            glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carPosition, up);
             if (moving) {
                 if (forward) {
                     move = move + 0.2f;
+                    carPosition.z += 0.2f;
+                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
                 }
                 else {
                     move = move - 0.2f;
+                    carPosition.z -= 0.2f;
+                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z - 0.2 });
                 }
+            }
+
+            glm::mat4 view = camera.viewMatrix();
+
+            if (!cam1) {
+                view = light_camera.viewMatrix();
             }
             glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
             m_modelMatrix = translationMatrix;
-            const glm::mat4 mvpMatrix = m_projectionMatrix * camera.viewMatrix() * m_modelMatrix;
+            const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
@@ -148,7 +176,7 @@ public:
 
             for (GPUMesh& mesh : road) {
                 m_defaultShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * camera.viewMatrix() * glm::mat4{ 1.0f }));
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * view * glm::mat4{ 1.0f }));
                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(glm::mat4 { 1.0f }));
                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(glm::inverseTranspose(glm::mat4{ 1.0f })));
                 if (mesh.hasTextureCoords()) {
@@ -177,18 +205,18 @@ public:
         switch (key) {
         case GLFW_KEY_1:
             if (!cam1) {
-                temp = light_camera;
+                /*temp = light_camera;
                 light_camera = camera;
-                camera = temp;
+                camera = temp;*/
                 cam1 = true;
             }
 
             break;
         case GLFW_KEY_2:
             if (cam1) {
-                temp = light_camera;
+                /*temp = light_camera;
                 light_camera = camera;
-                camera = temp;
+                camera = temp;*/
                 cam1 = false;
             }
             break;
@@ -259,6 +287,8 @@ private:
     Camera light_camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera temp{ &m_window};
     bool cam1{ true };
+    glm::vec3 carPosition;
+
 
     float move;
     bool moving;

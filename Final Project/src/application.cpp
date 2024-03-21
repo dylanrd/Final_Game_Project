@@ -2,6 +2,7 @@
 #include "camera.h"
 #include "mesh.h"
 #include "texture.h"
+#include "terrain.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
 #include <framework/disable_all_warnings.h>
@@ -36,7 +37,7 @@ public:
 
         Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
         Camera camera2{ &m_window, cameraPosition, direction };
-
+        
         light_camera = camera2;
         camera = camera1;
         temp = { &m_window };
@@ -44,7 +45,7 @@ public:
         move = 0.f;
         moving = false;
         forward = false;
-        
+        terrain = Terrain();
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
@@ -175,7 +176,7 @@ public:
                 mesh.draw(m_defaultShader);
             }
 
-            glm::mat4 translationMatrixGround = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-3,0 });
+           /* glm::mat4 translationMatrixGround = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-3,0 });
             for (GPUMesh& mesh : road) {
                 m_defaultShader.bind();
                 glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * view * translationMatrixGround));
@@ -192,9 +193,11 @@ public:
                     glUniform1i(5, m_useMaterial);
                 }
                 mesh.draw(m_defaultShader);
-            }
+            }*/
 
-
+            
+            terrain.renderTerrain(view, camera.cameraPos());
+            
             m_window.swapBuffers();
         }
     }
@@ -290,7 +293,7 @@ private:
     Camera temp{ &m_window};
     bool cam1{ true };
     glm::vec3 carPosition;
-
+    Terrain terrain;
 
     float move;
     bool moving;

@@ -45,7 +45,7 @@ public:
         move = 0.f;
         moving = false;
         forward = false;
-        terrain = Terrain();
+        //terrain = Terrain();
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
@@ -63,7 +63,7 @@ public:
                 onMouseReleased(button, mods);
         });
 
-        m_meshes = GPUMesh::loadMeshGPU("resources/RedBull RB6.obj");
+        m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
         road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
 
         try {

@@ -18,7 +18,7 @@ Terrain::Terrain(void)
 }
 
 void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
-	int SIZE = 200;
+	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
 	const int count = VERTEX_COUNT * VERTEX_COUNT;
 	float vertices[count * 3];
@@ -39,8 +39,8 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 			normals[vertexPointer * 3] = 0;
 			normals[vertexPointer * 3 + 1] = 1;
 			normals[vertexPointer * 3 + 2] = 0;
-			textureCoords[vertexPointer * 2] = (float)j / ((float)VERTEX_COUNT - 1);
-			textureCoords[vertexPointer * 2 + 1] = (float)i / ((float)VERTEX_COUNT - 1);
+			textureCoords[vertexPointer * 2] = (float) j / ((float)VERTEX_COUNT - 1);
+			textureCoords[vertexPointer * 2 + 1] = (float) i / ((float)VERTEX_COUNT - 1);
 			vertexPointer++;
 
 			terrainVertex vertex{
@@ -73,7 +73,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	}
 
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("resources/benji.png", &texWidth, &texHeight, &texChannels, 3);
+	stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);
 
 	GLuint texLight;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texLight);
@@ -81,8 +81,8 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glTextureSubImage2D(texLight, 0, 0, 0, texWidth, texHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels);
 
 	// Set behaviour for when texture coordinates are outside the [0, 1] range.
-	glTextureParameteri(texLight, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTextureParameteri(texLight, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTextureParameteri(texLight, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(texLight, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	// Set interpolation for texture sampling (GL_NEAREST for no interpolation).
 	glTextureParameteri(texLight, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

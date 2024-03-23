@@ -37,7 +37,7 @@ public:
         
         Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
         Camera camera2{ &m_window, cameraPosition, direction };
-        
+        thirdPersonView = camera2;
         light_camera = camera2;
         camera = camera1;
         temp = { &m_window };
@@ -104,7 +104,7 @@ public:
         int dummyInteger = 0; // Initialized to 0
      
       
-        
+        //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         while (!m_window.shouldClose()) {
             
@@ -354,7 +354,7 @@ private:
     bool kd;
     bool bphong;
     // Projection and view matrices for you to fill in and use
-    glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 100.f);
+    glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
     glm::mat4 m_modelMatrix { 1.0f };
 };

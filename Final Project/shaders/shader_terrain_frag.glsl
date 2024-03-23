@@ -24,5 +24,5 @@ void main()
     //const vec3 normal = normalize(fragNormal);
     //vec3 col = kd * dot(normalize(fragNormal), normalize(lightPos - fragPosition));
     
-    fragColor = vec4(1,0,0,1);
+    fragColor = vec4(texture(colorMap, fragTexCoord).rgb, 1);
 }

@@ -34,7 +34,7 @@ public:
         float distanceFromMesh = 40.0f; // How far the camera is from the mesh
         glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
         glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
-
+        
         Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
         Camera camera2{ &m_window, cameraPosition, direction };
         
@@ -45,6 +45,9 @@ public:
         move = 0.f;
         moving = false;
         forward = false;
+
+        kd = false;
+        bphong = false;
         //terrain = Terrain();
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
@@ -71,6 +74,16 @@ public:
             defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
             defaultBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/shader_frag.glsl");
             m_defaultShader = defaultBuilder.build();
+
+      
+            m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
+
+            ShaderBuilder kdShaderBuilder;
+            kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
+            kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
+            m_kdShader = kdShaderBuilder.build();
+
+            
 
             ShaderBuilder shadowBuilder;
             shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
@@ -159,21 +172,52 @@ public:
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
 
             for (GPUMesh& mesh : m_meshes) {
-                m_defaultShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                if (mesh.hasTextureCoords()) {
-                    m_texture.bind(GL_TEXTURE0);
-                    glUniform1i(3, 0);
-                    glUniform1i(4, GL_TRUE);
-                    glUniform1i(5, GL_FALSE);
-                } else {
-                    glUniform1i(4, GL_FALSE);
-                    glUniform1i(5, m_useMaterial);
-                    glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                if (!kd && !bphong) {
+                    m_defaultShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    if (mesh.hasTextureCoords()) {
+                        m_texture.bind(GL_TEXTURE0);
+                        glUniform1i(3, 0);
+                        glUniform1i(4, GL_TRUE);
+                        glUniform1i(5, GL_FALSE);
+                    }
+                    else {
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, m_useMaterial);
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                    }
+                    mesh.draw(m_defaultShader);
+                   
                 }
-                mesh.draw(m_defaultShader);
+                else {
+                    if (kd) {
+                        std::cout << "here" << std::endl;
+                        m_kdShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, m_useMaterial);
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+
+                        mesh.draw(m_kdShader);
+                    }
+                    else {
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, m_useMaterial);
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+
+                        mesh.draw(m_bphongShader);
+                        
+                    }
+                }
+                
             }
 
            /* glm::mat4 translationMatrixGround = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-3,0 });
@@ -195,8 +239,7 @@ public:
                 mesh.draw(m_defaultShader);
             }*/
 
-            
-            terrain.renderTerrain(view, camera.cameraPos());
+            //terrain.renderTerrain(view, camera.cameraPos());
             
             m_window.swapBuffers();
         }
@@ -233,6 +276,14 @@ public:
         case GLFW_KEY_DOWN:
             moving = true;
             forward = false;
+            break;
+        case GLFW_KEY_P:
+            kd = !kd;
+            std::cout << "Kd is " << kd << std::endl;
+            break;
+        case GLFW_KEY_O:
+            bphong = !bphong;
+            std::cout << "blinn phong is " << bphong << std::endl;
             break;
         default:
             break;
@@ -281,6 +332,8 @@ private:
 
     // Shader for default rendering and for depth rendering
     Shader m_defaultShader;
+    Shader m_kdShader;
+    Shader m_bphongShader;
     Shader m_shadowShader;
 
     std::vector<GPUMesh> m_meshes;
@@ -298,6 +351,8 @@ private:
     float move;
     bool moving;
     bool forward;
+    bool kd;
+    bool bphong;
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 100.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));

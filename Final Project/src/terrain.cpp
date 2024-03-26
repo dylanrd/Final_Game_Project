@@ -6,9 +6,11 @@ DISABLE_WARNINGS_PUSH()
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 #include <glm/vec3.hpp>
+#include <glm/gtx/string_cast.hpp>
 DISABLE_WARNINGS_POP()
 #include <vector>
 #include <framework/shader.h>
+#include <iostream>
 
 
 
@@ -97,7 +99,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	terrainShader.addStage(GL_FRAGMENT_SHADER, "shaders/shader_terrain_frag.glsl");
 	
 
-	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,0,-SIZE/4 });
+	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5,-SIZE/4 });
 	m_modelMatrix = translationMatrix;
 	const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 	// Normals should be transformed differently than positions (ignoring translations + dealing with scaling):

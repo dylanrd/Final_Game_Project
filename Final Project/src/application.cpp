@@ -16,6 +16,8 @@ DISABLE_WARNINGS_PUSH()
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/mat4x4.hpp>
 #include <imgui/imgui.h>
+#include <glm/gtx/string_cast.hpp>
+
 DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <framework/window.h>
@@ -239,7 +241,7 @@ public:
                 mesh.draw(m_defaultShader);
             }*/
 
-            //terrain.renderTerrain(view, camera.cameraPos());
+            terrain.renderTerrain(view, camera.cameraPos());
             
             m_window.swapBuffers();
         }

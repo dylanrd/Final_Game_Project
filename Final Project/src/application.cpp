@@ -29,7 +29,12 @@ class Application {
 public:
     Application()
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
-        , m_texture("resources/skybox/right.png")
+        , m_texture1("resources/skybox/bottom.jpg"), 
+        m_texture2("resources/skybox/front.jpg"),
+        m_texture3("resources/skybox/back.jpg"),
+        m_texture4("resources/skybox/top.jpg"),
+        m_texture5("resources/skybox/left.jpg"),
+        m_texture6("resources/skybox/right.jpg")
     {
         carPosition = { 0.f, 0.f, 0.f };
         glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
@@ -53,44 +58,7 @@ public:
         //terrain = Terrain();
 
 
-        textures_faces = { "resources/skybox/right.png", "resources/skybox/left.png",
-            "resources/skybox/top.png", "resources/skybox/bot.png", "resources/skybox/front.png", "resources/skybox/back.png" };
-        cubemapTexture = loadCubemap();
-        skyboxVertices =
-        {
-            //   Coordinates
-            -10.0f, -10.0f,  10.0f,//        7--------6
-             10.0f, -10.0f,  10.0f,//       /|       /|
-             10.0f, -10.0f, -10.0f,//      4--------5 |
-            -10.0f, -10.0f, -10.0f,//      | |      | |
-            -10.0f,  10.0f,  10.0f,//      | 3------|-2
-             10.0f,  10.0f,  10.0f,//      |/       |/
-             10.0f,  10.0f, -10.0f,//      0--------1
-            -10.0f,  10.0f, -10.0f
-        };
-
-        skyboxIndices =
-        {
-            // Right
-            1, 2, 6,
-            6, 5, 1,
-            // Left
-            0, 4, 7,
-            7, 3, 0,
-            // Top
-            4, 5, 6,
-            6, 7, 4,
-            // Bottom
-            0, 3, 2,
-            2, 1, 0,
-            // Back
-            0, 1, 5,
-            5, 4, 0,
-            // Front
-            3, 7, 6,
-            6, 2, 3
-        };
-
+   
 
 
 
@@ -118,6 +86,8 @@ public:
 
         m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
         road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
+        skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
+        skybox.erase(std::next(skybox.begin()));
 
         try {
             ShaderBuilder defaultBuilder;
@@ -155,30 +125,21 @@ public:
         }
 
         
-        glGenVertexArrays(1, &skyboxVAO);
-        glGenBuffers(1, &skyboxVBO);
-        glGenBuffers(1, &skyboxEBO);
-        glBindVertexArray(skyboxVAO);
-        glBindBuffer(GL_ARRAY_BUFFER, skyboxVBO);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(skyboxVertices), &skyboxVertices, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, skyboxEBO);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(skyboxIndices), &skyboxIndices, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-       
-        m_skyboxShader.bind();
-        glUniform1i(6, cubemapTexture);
+        
 
     }
 
     void update()
     {
         int dummyInteger = 0; // Initialized to 0
-     
-      
+        
+            
+        m_texture1.bind(GL_TEXTURE1);
+        m_texture2.bind(GL_TEXTURE2);
+        m_texture3.bind(GL_TEXTURE3);
+        m_texture4.bind(GL_TEXTURE4);
+        m_texture5.bind(GL_TEXTURE5);
+        m_texture6.bind(GL_TEXTURE6);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         while (!m_window.shouldClose()) {
@@ -243,45 +204,28 @@ public:
             glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
             m_modelMatrix = translationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+            const glm::mat4 invmvpMatrix = m_projectionMatrix * view * glm::inverse(m_modelMatrix);
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
 
-           
-           
-            glDepthFunc(GL_LEQUAL);  
-
-            m_skyboxShader.bind();
-            glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
-            glm::mat4 view2 = glm::mat4(glm::mat3(camera.viewMatrix()));
-
-            glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
-            glUniformMatrix4fv(3, 1, GL_FALSE, glm::value_ptr(camera.viewMatrix()));
-            // skybox cube
-            glBindVertexArray(skyboxVAO);
-            glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-            glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
             
-            glDepthFunc(GL_LESS);
 
-
-           /* for (GPUMesh& mesh : m_meshes) {
+            for (GPUMesh& mesh : m_meshes) {
                 if (!kd && !bphong) {
                     m_defaultShader.bind();
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                     glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
                     if (mesh.hasTextureCoords()) {
-                        m_texture.bind(GL_TEXTURE0);
+                        m_texture1.bind(GL_TEXTURE0);
                         glUniform1i(3, 0);
                         glUniform1i(4, GL_TRUE);
                         glUniform1i(5, GL_FALSE);
                     }
                     else {
                         glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, m_useMaterial);
+                        glUniform1i(5, GL_TRUE);
                         glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
                     }
                     mesh.draw(m_defaultShader);
@@ -293,8 +237,7 @@ public:
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, m_useMaterial);
+     
                         glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
                         mesh.draw(m_kdShader);
@@ -304,8 +247,7 @@ public:
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, m_useMaterial);
+
                         glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
                         mesh.draw(m_bphongShader);
@@ -313,21 +255,24 @@ public:
                     }
                 }
                 
-            }*/
-
-            glm::mat4 translationMatrixGround = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,-3,0 });
-            for (GPUMesh& mesh : road) {
-                m_defaultShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix * view * translationMatrixGround));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(translationMatrixGround));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(glm::inverseTranspose(translationMatrixGround)));
-              
-                glUniform1i(3, 0);
-                glUniform1i(4, GL_TRUE);
-                glUniform1i(5, GL_FALSE);
-                
-                mesh.draw(m_defaultShader);
             }
+
+
+            for (int i = 0; i < 6; i++) {
+                GPUMesh& mesh = skybox[i];
+                m_skyboxShader.bind();
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(invmvpMatrix));
+                glUniform3fv(1, 1, glm::value_ptr(camera.cameraPos()));
+                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                glUniform1i(3, i+1);
+                glUniform1i(4, GL_TRUE); 
+                glUniform1i(5, GL_FALSE);
+                glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                
+                mesh.draw(m_skyboxShader);
+            }
+
+            
 
             //terrain.renderTerrain(view, camera.cameraPos());
             
@@ -337,8 +282,7 @@ public:
 
             m_window.swapBuffers();
         }
-        glDeleteVertexArrays(1, &skyboxVAO);
-        glDeleteBuffers(1, &skyboxVBO);
+     
     }
 
     // In here you can handle key presses
@@ -423,38 +367,7 @@ public:
         std::cout << "Released mouse button: " << button << std::endl;
     }
 
-    unsigned int loadCubemap()
-    {
-        unsigned int textureID;
-        glGenTextures(1, &textureID);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-        int width, height, nrChannels;
-        for (unsigned int i = 0; i < textures_faces.size(); i++)
-        {
-            unsigned char* data = stbi_load(textures_faces[i].c_str(), &width, &height, &nrChannels, 0);
-            if (data)
-            {
-                stbi_set_flip_vertically_on_load(false);
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
-                );
-                stbi_image_free(data);
-            }
-            else
-            {
-                std::cout << "Cubemap tex failed to load at path: " << textures_faces[i] << std::endl;
-                stbi_image_free(data);
-            }
-        }
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-        return textureID;
-    }
+    
 
 
 private:
@@ -469,7 +382,13 @@ private:
 
     std::vector<GPUMesh> m_meshes;
     std::vector<GPUMesh> road;
-    Texture m_texture;
+    std::vector<GPUMesh> skybox;
+    Texture m_texture1;
+    Texture m_texture2;
+    Texture m_texture3;
+    Texture m_texture4;
+    Texture m_texture5;
+    Texture m_texture6;
     bool m_useMaterial { true };
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera thirdPersonView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
@@ -478,11 +397,7 @@ private:
     bool cam1{ true };
     glm::vec3 carPosition;
     Terrain terrain;
-    std::vector<std::string>textures_faces;
-    std::vector<float> skyboxVertices;
-    std::vector<unsigned int> skyboxIndices;
-    unsigned int skyboxVAO, skyboxVBO, skyboxEBO;
-    unsigned int cubemapTexture;
+    
     float move;
     bool moving;
     bool forward;

@@ -9,8 +9,6 @@ layout(std140) uniform Material // Must match the GPUMaterial defined in src/mes
 };
 
 layout(location = 3) uniform sampler2D colorMap;
-layout(location = 4) uniform bool hasTexCoords;
-layout(location = 5) uniform bool useMaterial;
 layout(location = 6) uniform vec3 lightPos;
 
 in vec3 fragPosition;

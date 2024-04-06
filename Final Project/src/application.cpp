@@ -87,7 +87,6 @@ public:
         m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
         road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
         skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
-        skybox.erase(std::next(skybox.begin()));
 
         try {
             ShaderBuilder defaultBuilder;
@@ -204,7 +203,10 @@ public:
             glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
             m_modelMatrix = translationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-            const glm::mat4 invmvpMatrix = m_projectionMatrix * view * glm::inverse(m_modelMatrix);
+
+            glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
+            const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
+
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
@@ -261,9 +263,8 @@ public:
             for (int i = 0; i < 6; i++) {
                 GPUMesh& mesh = skybox[i];
                 m_skyboxShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(invmvpMatrix));
-                glUniform3fv(1, 1, glm::value_ptr(camera.cameraPos()));
-                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
                 glUniform1i(3, i+1);
                 glUniform1i(4, GL_TRUE); 
                 glUniform1i(5, GL_FALSE);

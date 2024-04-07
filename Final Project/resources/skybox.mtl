@@ -9,7 +9,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/back.jpg
+map_Kd skybox/back.jpg
 
 newmtl Material.001
 Ns 250.000000
@@ -19,7 +19,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/right.jpg
+map_Kd skybox/right.jpg
 
 newmtl Material.002
 Ns 250.000000
@@ -29,7 +29,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/left.jpg
+map_Kd skybox/left.jpg
 
 newmtl Material.004
 Ns 250.000000
@@ -39,7 +39,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/front.jpg
+map_Kd skybox/front.jpg
 
 newmtl Material.005
 Ns 250.000000
@@ -49,7 +49,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/bottom.jpg
+map_Kd skybox/bottom.jpg
 
 newmtl Material.006
 Ns 250.000000
@@ -59,4 +59,4 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.450000
 d 1.000000
 illum 2
-map_Kd resources/skybox/top.jpg
+map_Kd skybox/top.jpg

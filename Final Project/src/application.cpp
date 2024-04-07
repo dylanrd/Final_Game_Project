@@ -327,7 +327,7 @@ public:
             glBindVertexArray(0);
             glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
+            glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
             glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
             glBindVertexArray(cubeVAO);
             glActiveTexture(GL_TEXTURE0);

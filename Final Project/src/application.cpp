@@ -204,12 +204,13 @@ public:
 
         std::vector<std::string> faces
         {
-            ("resources/skybox/bottom.jpg"),
-            ("resources/skybox/front.jpg"),
-            ("resources/skybox/back.jpg"),
-            ("resources/skybox/top.jpg"),
-            ("resources/skybox/left.jpg"),
-            ("resources/skybox/right.jpg"),
+
+            ("resources/cubemap/back.jpg"),
+            ("resources/cubemap/front.jpg"),
+            ("resources/cubemap/top.jpg"),
+            ("resources/cubemap/bottom.jpg"),
+            ("resources/cubemap/right.jpg"),
+            ("resources/cubemap/left.jpg"),
         };
 ;        
 
@@ -321,7 +322,7 @@ public:
         
 
             
-            glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
+            glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
             m_environmentShader.bind();
             glBindVertexArray(0);
@@ -335,51 +336,51 @@ public:
             glDrawArrays(GL_TRIANGLES, 0, 36);
             glBindVertexArray(0);
 
-            //for (GPUMesh& mesh : m_meshes) {
-            //    if (!kd && !bphong) {
-            //        m_defaultShader.bind();
-            //        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-            //        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-            //        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-            //        if (mesh.hasTextureCoords()) {
-            //            m_texture1.bind(GL_TEXTURE0);
-            //            glUniform1i(3, 0);
-            //            glUniform1i(4, GL_TRUE);
-            //            glUniform1i(5, GL_FALSE);
-            //        }
-            //        else {
-            //            glUniform1i(4, GL_FALSE);
-            //            glUniform1i(5, GL_TRUE);
-            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-            //        }
-            //        mesh.draw(m_defaultShader);
-            //       
-            //    }
-            //    else {
-            //        if (kd) {
-            //            m_kdShader.bind();
-            //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-            //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-            //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+            for (GPUMesh& mesh : m_meshes) {
+                if (!kd && !bphong) {
+                    m_defaultShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    if (mesh.hasTextureCoords()) {
+                        m_texture1.bind(GL_TEXTURE0);
+                        glUniform1i(3, 0);
+                        glUniform1i(4, GL_TRUE);
+                        glUniform1i(5, GL_FALSE);
+                    }
+                    else {
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, GL_TRUE);
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                    }
+                    mesh.draw(m_defaultShader);
+                   
+                }
+                else {
+                    if (kd) {
+                        m_kdShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
      
-            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
-            //            mesh.draw(m_kdShader);
-            //        }
-            //        else {
-            //            m_bphongShader.bind();
-            //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-            //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-            //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        mesh.draw(m_kdShader);
+                    }
+                    else {
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
-            //            mesh.draw(m_bphongShader);
-            //            
-            //        }
-            //    }
-            //    
-            //}
+                        mesh.draw(m_bphongShader);
+                        
+                    }
+                }
+                
+            }
 
 
             for (int i = 0; i < 6; i++) {

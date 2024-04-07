@@ -25,6 +25,11 @@ DISABLE_WARNINGS_POP()
 #include <iostream>
 #include <vector>
 
+
+unsigned int loadCubemap(std::vector<std::string> faces);
+
+
+
 class Application {
 public:
     Application()
@@ -56,17 +61,6 @@ public:
         kd = false;
         bphong = false;
         //terrain = Terrain();
-
-
-   
-
-
-
-
-
-
-
-
 
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
@@ -113,6 +107,11 @@ public:
             skyboxBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/skybox_frag.glsl");
             m_skyboxShader = skyboxBuilder.build();
 
+            ShaderBuilder environmentShader;
+            environmentShader.addStage(GL_VERTEX_SHADER, "shaders/env_vert.glsl");
+            environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
+            m_environmentShader = environmentShader.build();
+
 
             // Any new shaders can be added below in similar fashion.
             // ==> Don't forget to reconfigure CMake when you do!
@@ -123,10 +122,9 @@ public:
             std::cerr << e.what() << std::endl;
         }
 
-        
-        
-
     }
+
+
 
     void update()
     {
@@ -140,6 +138,108 @@ public:
         m_texture5.bind(GL_TEXTURE5);
         m_texture6.bind(GL_TEXTURE6);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
+
+        GLfloat cubeVertices[] = {
+            // positions          // normals
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+             0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+             0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f,  0.0f, 1.0f,
+
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+             0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
+            -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+             0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+             0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
+            -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+        };
+
+        GLuint cubeVBO, cubeVAO;
+        glGenVertexArrays(1, &cubeVAO);
+        glGenBuffers(1, &cubeVBO);
+        glBindVertexArray(cubeVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), &cubeVertices, GL_STATIC_DRAW);
+        // Set vertex attribute pointers
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+        glEnableVertexAttribArray(1);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+
+
+
+        std::vector<std::string> faces
+        {
+            ("resources/skybox/bottom.jpg"),
+            ("resources/skybox/front.jpg"),
+            ("resources/skybox/back.jpg"),
+            ("resources/skybox/top.jpg"),
+            ("resources/skybox/left.jpg"),
+            ("resources/skybox/right.jpg"),
+        };
+;        
+
+        
+        unsigned int textureID;
+        glGenTextures(1, &textureID);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+        int width, height, nrComponents;
+        for (unsigned int i = 0; i < faces.size(); i++)
+        {
+            unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrComponents, 0);
+            if (data)
+            {
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+                stbi_image_free(data);
+            }
+            else
+            {
+                std::cout << "Cubemap texture failed to load at path: " << faces[i] << std::endl;
+                stbi_image_free(data);
+            }
+        }
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        GLuint cubeMapTexture = textureID;
+        
 
         while (!m_window.shouldClose()) {
             
@@ -212,52 +312,74 @@ public:
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
 
             
+            
+            
+            
+            
+            
+            
+        
 
-            for (GPUMesh& mesh : m_meshes) {
-                if (!kd && !bphong) {
-                    m_defaultShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                    if (mesh.hasTextureCoords()) {
-                        m_texture1.bind(GL_TEXTURE0);
-                        glUniform1i(3, 0);
-                        glUniform1i(4, GL_TRUE);
-                        glUniform1i(5, GL_FALSE);
-                    }
-                    else {
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, GL_TRUE);
-                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-                    }
-                    mesh.draw(m_defaultShader);
-                   
-                }
-                else {
-                    if (kd) {
-                        m_kdShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+            
+            glm::mat4 projection = glm::perspective(glm::radians(80.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
+            
+            m_environmentShader.bind();
+            glBindVertexArray(0);
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(projection));
+            glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
+            glBindVertexArray(cubeVAO);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 36);
+            glBindVertexArray(0);
+
+            //for (GPUMesh& mesh : m_meshes) {
+            //    if (!kd && !bphong) {
+            //        m_defaultShader.bind();
+            //        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+            //        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+            //        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+            //        if (mesh.hasTextureCoords()) {
+            //            m_texture1.bind(GL_TEXTURE0);
+            //            glUniform1i(3, 0);
+            //            glUniform1i(4, GL_TRUE);
+            //            glUniform1i(5, GL_FALSE);
+            //        }
+            //        else {
+            //            glUniform1i(4, GL_FALSE);
+            //            glUniform1i(5, GL_TRUE);
+            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+            //        }
+            //        mesh.draw(m_defaultShader);
+            //       
+            //    }
+            //    else {
+            //        if (kd) {
+            //            m_kdShader.bind();
+            //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+            //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+            //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
      
-                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
-                        mesh.draw(m_kdShader);
-                    }
-                    else {
-                        m_bphongShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+            //            mesh.draw(m_kdShader);
+            //        }
+            //        else {
+            //            m_bphongShader.bind();
+            //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+            //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+            //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                        glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+            //            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
 
-                        mesh.draw(m_bphongShader);
-                        
-                    }
-                }
-                
-            }
+            //            mesh.draw(m_bphongShader);
+            //            
+            //        }
+            //    }
+            //    
+            //}
 
 
             for (int i = 0; i < 6; i++) {
@@ -273,6 +395,13 @@ public:
                 mesh.draw(m_skyboxShader);
             }
 
+
+
+            
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+            // Render other objects with environment mapping
+           
             
 
             //terrain.renderTerrain(view, camera.cameraPos());
@@ -285,6 +414,7 @@ public:
         }
      
     }
+    
 
     // In here you can handle key presses
     // key - Integer that corresponds to numbers in https://www.glfw.org/docs/latest/group__keys.html
@@ -380,6 +510,11 @@ private:
     Shader m_bphongShader;
     Shader m_shadowShader;
     Shader m_skyboxShader;
+    Shader m_environmentShader;
+
+
+    unsigned int loadCubemap(std::vector<std::string> faces);
+
 
     std::vector<GPUMesh> m_meshes;
     std::vector<GPUMesh> road;
@@ -415,5 +550,10 @@ int main()
     Application app;
     app.update();
 
+    return 0;
+}
+
+unsigned int Application::loadCubemap(std::vector<std::string> faces)
+{
     return 0;
 }

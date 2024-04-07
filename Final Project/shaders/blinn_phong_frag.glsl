@@ -39,6 +39,9 @@ void main()
     
     vec3 result = (ambient + diffuse + specular) * col;
 
-    
-    fragColor = vec4(result, 1);
+    vec3 transparentColor = vec3(1.0, 1.0, 1.0); // Assuming white is fully transparent
+    vec3 finalColor = mix(transparentColor, result, transparency);
+
+    // Final color calculation
+    fragColor = vec4(finalColor, 1);
 }

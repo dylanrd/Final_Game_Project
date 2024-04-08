@@ -3,6 +3,7 @@
 #include "mesh.h"
 #include "texture.h"
 #include "terrain.h"
+#include "transformation.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
 #include <framework/disable_all_warnings.h>
@@ -71,8 +72,11 @@ public:
 
         kd = false;
         bphong = false;
-        //terrain = Terrain();
+       
 
+        
+        //terrain = Terrain();
+        //transform = Transformation();
         m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
             if (action == GLFW_PRESS)
                 onKeyPressed(key, mods);
@@ -92,6 +96,7 @@ public:
         m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
         road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
         skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
+        arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
 
         try {
             ShaderBuilder defaultBuilder;
@@ -333,13 +338,6 @@ public:
             
             
             
-            
-            
-            
-            
-        
-
-            
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
             m_environmentShader.bind();
@@ -400,6 +398,74 @@ public:
                 
             }
 
+           /* glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
+            glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
+            glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
+            glm::mat4 combined = glm::mat4(1);
+            glm::mat4 translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 12,0,0 });*/
+            
+
+            for (int i = 0; i < 4; i++) {
+                for (GPUMesh& mesh : arm) {
+                    tracker = (tracker + 1) % 9;
+                    rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
+                    //scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
+                    //unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
+                    
+                    //translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,i + 2,i });
+                    if (slower != 0) {
+                        combined = combined;
+                    }
+                    
+                    else if (i >= 1) {
+                        combined *= translationMatrixArm * rotationS;
+                    }
+                    else {
+                        combined *= translationMatrixArm;
+                    }
+                    m_modelMatrix = combined;
+                    const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+                    if (!kd && !bphong) {
+                        m_defaultShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        mesh.draw(m_defaultShader);
+
+                    }
+                    else {
+                        if (kd) {
+                            m_kdShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+
+                            mesh.draw(m_kdShader);
+                        }
+                        else {
+                            m_bphongShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                            glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
+
+                            mesh.draw(m_bphongShader);
+
+                        }
+                    }
+                }
+
+                translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,(i + 1) * 3,0 });
+            }
+
+
+            slower = (slower + 1) % 15;
+
+
 
             for (int i = 0; i < 6; i++) {
                 GPUMesh& mesh = skybox[i];
@@ -425,7 +491,7 @@ public:
 
             terrain.renderTerrain(view, camera.cameraPos());
             
-             
+            //transform.renderCylinder(view, camera.cameraPos());
             
 
 
@@ -550,6 +616,7 @@ private:
     std::vector<GPUMesh> m_meshes;
     std::vector<GPUMesh> road;
     std::vector<GPUMesh> skybox;
+    std::vector<GPUMesh> arm;
     Texture m_texture1;
     Texture m_texture2;
     Texture m_texture3;
@@ -565,7 +632,7 @@ private:
     bool top{ false };
     glm::vec3 carPosition;
     Terrain terrain;
-    
+    Transformation transform;
     float move;
     bool moving;
     bool forward;
@@ -575,6 +642,18 @@ private:
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
     glm::mat4 m_modelMatrix { 1.0f };
+
+    int arr[9] = {8, 10, 12, 15, 20 ,15,12,10,8 };
+    int tracker = 0;
+    int slower = 0;
+
+    glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
+    glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
+    glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
+    
+    glm::mat4 translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 12,0,0 });
+    glm::mat4 combined = translationMatrixArm;
+    
 };
 
 int main()

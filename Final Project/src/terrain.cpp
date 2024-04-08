@@ -56,6 +56,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	}
 
 
+
 	int pointer = 0;
 	for (int gz = 0; gz < VERTEX_COUNT - 1; gz++) {
 		for (int gx = 0; gx < VERTEX_COUNT - 1; gx++) {
@@ -74,8 +75,51 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 		}
 	}
 
+	for (unsigned int i = 0; i < triangles.size(); i += 3) {
+
+		terrainVertex& v0 = vertices2[triangles[i].x];
+		terrainVertex& v1 = vertices2[triangles[i].y];
+		terrainVertex& v2 = vertices2[triangles[i].z];
+
+		glm::vec3 Edge1 = v1.position - v0.position;
+		glm::vec3 Edge2 = v2.position - v0.position;
+
+		double DeltaU1 = v1.texCoord.x - v0.texCoord.x;
+		double DeltaV1 = v1.texCoord.y - v0.texCoord.y;
+		double DeltaU2 = v2.texCoord.x - v0.texCoord.x;
+		double DeltaV2 = v2.texCoord.y - v0.texCoord.y;
+
+		float f = 1.0f / (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
+
+		
+		glm::vec3 Tangent, Bitangent;
+
+		Tangent.x = f * (DeltaV2 * Edge1.x - DeltaV1 * Edge2.x);
+		Tangent.y = f * (DeltaV2 * Edge1.y - DeltaV1 * Edge2.y);
+		Tangent.z = f * (DeltaV2 * Edge1.z - DeltaV1 * Edge2.z);
+
+		Bitangent.x = f * (-DeltaU2 * Edge1.x + DeltaU1 * Edge2.x);
+		Bitangent.y = f * (-DeltaU2 * Edge1.y + DeltaU1 * Edge2.y);
+		Bitangent.z = f * (-DeltaU2 * Edge1.z + DeltaU1 * Edge2.z);
+
+
+	
+		v0.tangent += Tangent;
+		v1.tangent += Tangent;
+		v2.tangent += Tangent;
+	}
+
+	for (unsigned int i = 0; i < vertices2.size(); i++) {
+		vertices2[i].tangent = glm::normalize(vertices2[i].tangent);
+	}
+
 	int texWidth, texHeight, texChannels;
-	stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);
+	/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
+	int normalWidth, normalHeight, normalChannels;
+
+	stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
+
+	stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
 
 	GLuint texLight;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texLight);
@@ -90,9 +134,27 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glTextureParameteri(texLight, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTextureParameteri(texLight, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+	GLuint normalMap;
+	glCreateTextures(GL_TEXTURE_2D, 1, &normalMap);
+	glTextureStorage2D(normalMap, 1, GL_RGB8, normalWidth, normalHeight);
+	glTextureSubImage2D(normalMap, 0, 0, 0, normalWidth, normalHeight, GL_RGB, GL_UNSIGNED_BYTE, normal_map);
+
+	// Set behaviour for when texture coordinates are outside the [0, 1] range.
+	glTextureParameteri(normalMap, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTextureParameteri(normalMap, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	// Set interpolation for texture sampling (GL_NEAREST for no interpolation).
+	glTextureParameteri(normalMap, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(normalMap, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	GLuint framebuffer;
 	glCreateFramebuffers(1, &framebuffer);
 	glNamedFramebufferTexture(framebuffer, GL_DEPTH_ATTACHMENT, texLight, 0);
+
+
+	GLuint framebuffer2;
+	glCreateFramebuffers(1, &framebuffer2);
+	glNamedFramebufferTexture(framebuffer2, GL_DEPTH_ATTACHMENT, normalMap, 0);
 
 	ShaderBuilder terrainShader;
 	terrainShader.addStage(GL_VERTEX_SHADER, "shaders/shader_terrain_vert.glsl");
@@ -116,11 +178,10 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glBindTexture(GL_TEXTURE_2D, texLight);
 	glUniform1i(3, 0);
 
-	
-
-
-
-
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, normalMap);
+	glUniform1i(4, 1);
+		
 	GLuint VAO, VBO, IBO;
 	
 	glCreateBuffers(1, &IBO);
@@ -143,14 +204,18 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glEnableVertexArrayAttrib(VAO, 0);
 	glEnableVertexArrayAttrib(VAO, 1);
 	glEnableVertexArrayAttrib(VAO, 2);
+	glEnableVertexArrayAttrib(VAO, 3);
+
 	// We tell OpenGL what each vertex looks like and how they are mapped to the shader (location = ...).
 	glVertexArrayAttribFormat(VAO, 0, 3, GL_FLOAT, 0, offsetof(terrainVertex, position));
 	glVertexArrayAttribFormat(VAO, 1, 3, GL_FLOAT, false, offsetof(terrainVertex, normal));
 	glVertexArrayAttribFormat(VAO, 2, 2, GL_FLOAT, false, offsetof(terrainVertex, texCoord));
+	glVertexArrayAttribFormat(VAO, 3, 3, GL_FLOAT, 0, offsetof(terrainVertex, tangent));
 	// For each of the vertex attributes we tell OpenGL to get them from VBO at slot 0.
 	glVertexArrayAttribBinding(VAO, 0, 0);
 	glVertexArrayAttribBinding(VAO, 1, 0);
 	glVertexArrayAttribBinding(VAO, 2, 0);
+	glVertexArrayAttribBinding(VAO, 3, 0);
 	glBindVertexArray(0);
 	
 	glBindVertexArray(VAO);

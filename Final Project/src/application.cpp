@@ -48,7 +48,7 @@ public:
         glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
         
         
-        glm::quat meshOrientationTop = glm::angleAxis(glm::radians(80.0f), glm::vec3(1.f, 0.f, 0.0f));
+        glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
         glm::vec3 cameraPositionTop = carPosition + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
         glm::vec3 directionTop = glm::normalize(carPosition - cameraPositionTop);
         
@@ -278,7 +278,7 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
-            topView.updateInput();
+           
             glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             float distanceFromMesh = 10.0f; // How far the camera is from the mesh
             glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);

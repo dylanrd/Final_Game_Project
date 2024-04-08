@@ -47,13 +47,24 @@ public:
         glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
         glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
         
+        
+        glm::quat meshOrientationTop = glm::angleAxis(glm::radians(80.0f), glm::vec3(1.f, 0.f, 0.0f));
+        glm::vec3 cameraPositionTop = carPosition + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+        glm::vec3 directionTop = glm::normalize(carPosition - cameraPositionTop);
+        
+        
+
+        
+        
         Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
         Camera camera2{ &m_window, cameraPosition, direction };
-        thirdPersonView = camera2;
+        Camera camera3{ &m_window, cameraPositionTop, directionTop };
+        topView = camera3;
         light_camera = camera2;
         camera = camera1;
         temp = { &m_window };
         cam1 = true;
+        top = false;
         move = 0.f;
         moving = false;
         forward = false;
@@ -267,6 +278,7 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
+            topView.updateInput();
             glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             float distanceFromMesh = 10.0f; // How far the camera is from the mesh
             glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
@@ -288,17 +300,23 @@ public:
                     move = move + 0.2f;
                     carPosition.z += 0.2f;
                     light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
+                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2 });
                 }
                 else {
                     move = move - 0.2f;
                     carPosition.z -= 0.2f;
                     light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z - 0.2 });
+                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2});
                 }
             }
 
             glm::mat4 view = camera.viewMatrix();
 
-            if (!cam1) {
+            if (top) {
+               
+                view = topView.viewMatrix();
+            }
+            else if (!cam1) {
                 view = light_camera.viewMatrix();
             }
             glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
@@ -405,7 +423,7 @@ public:
            
             
 
-            //terrain.renderTerrain(view, camera.cameraPos());
+            terrain.renderTerrain(view, camera.cameraPos());
             
              
             
@@ -424,21 +442,33 @@ public:
     {
         switch (key) {
         case GLFW_KEY_1:
-            if (!cam1) {
+            if (!cam1 || top) {
                 /*temp = light_camera;
                 light_camera = camera;
                 camera = temp;*/
                 cam1 = true;
+                top = false;
             }
 
             break;
         case GLFW_KEY_2:
-            if (cam1) {
+            if (cam1 || top) {
                 /*temp = light_camera;
                 light_camera = camera;
                 camera = temp;*/
                 cam1 = false;
+                top = false;
             }
+            break;
+
+        case GLFW_KEY_3:
+            
+                /*temp = light_camera;
+                light_camera = camera;
+                camera = temp;*/
+                cam1 = false;
+                top = true;
+
             break;
 
         case GLFW_KEY_UP:
@@ -528,10 +558,11 @@ private:
     Texture m_texture6;
     bool m_useMaterial { true };
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
-    Camera thirdPersonView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    Camera topView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera light_camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera temp{ &m_window};
     bool cam1{ true };
+    bool top{ false };
     glm::vec3 carPosition;
     Terrain terrain;
     

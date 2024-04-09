@@ -42,8 +42,8 @@ public:
         m_texture5("resources/skybox/left.jpg"),
             m_texture6("resources/skybox/right.jpg")
         {
-            carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f) };
-            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
+            carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.0f, 0.0f));
             float distanceFromMesh = 40.0f; // How far the camera is from the mesh
             glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
             glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
@@ -57,7 +57,7 @@ public:
             anim_splines1 = loadSplinesFromJSON("resources/animations/BezierCurve1_data.json");
             std::cout << "loaded splines: " << !anim_splines1.empty() << std::endl;
             animTimer = 0.0f;
-            animDuration = 5.0f;
+            animDuration = 10.0f;
             inAnimation = false;
 
             Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
@@ -285,6 +285,7 @@ public:
 
             camera.updateInput();
             glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::vec3 shiftPos = glm::vec3(0.0f, 0.0f, 0.0f);
 
             if (!anim_splines1.empty()) {
                 if (inAnimation) {
@@ -294,7 +295,8 @@ public:
                         WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration);
                         //calculate how much the car moved in the last update
                         carLocation.direction = pos.direction;
-                        carLocation.position += pos.position - oldPos.position;
+                        shiftPos = pos.position - oldPos.position;
+                        carLocation.position += shiftPos;
                         meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
                         std::cout << "moved car" << std::endl;
@@ -328,11 +330,10 @@ public:
 
             // Create the view matrix
             glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carLocation.position, up);
-
             if (inAnimation) {
                
-                light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + (carLocation.position.z - light_camera.cameraPos().z )});
-                topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + (carLocation.position.z - topView.cameraPos().z)});
+                light_camera.changePos(light_camera.cameraPos() + shiftPos);
+            	topView.changePos(topView.cameraPos() + shiftPos);
             }
             if (moving) {
                 

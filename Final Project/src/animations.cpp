@@ -26,13 +26,13 @@ vector<BezierSpline> loadSplinesFromJSON(const string& filePath) {
     for (const auto& splineJSON : j["splines"]) {
         BezierSpline spline;
         for (const auto& cp : splineJSON["control_points"]) {
-            spline.control_points.emplace_back(glm::vec3(cp[0], cp[2], -cp[1]));
+            spline.control_points.emplace_back(glm::vec3(cp[0], cp[2], -1.0f * cp[1]));
         }
         for (const auto& hl : splineJSON["handles_left"]) {
-            spline.handles_left.emplace_back(glm::vec3(hl[0], hl[2], -hl[1]));
+            spline.handles_left.emplace_back(glm::vec3(hl[0], hl[2], -1.0f * hl[1]));
         }
         for (const auto& hr : splineJSON["handles_right"]) {
-            spline.handles_right.emplace_back(glm::vec3(hr[0], hr[2], -hr[1]));
+            spline.handles_right.emplace_back(glm::vec3(hr[0], hr[2], -1.0f * hr[1]));
         }
         splines.emplace_back(spline);
     }
@@ -71,7 +71,7 @@ glm::vec3 getBezierDirection(const glm::vec3& p0, const glm::vec3& p1, const glm
 }
 
 //calculates length of each individual bezier curve
-float getBezierLength(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, int subdivisions = 20) {
+float getBezierLength(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, int subdivisions = 100) {
     float length = 0.0f;
     glm::vec3 prevPoint = p0;
 
@@ -93,8 +93,8 @@ WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines,
     float totalLength = 0.0f;
     BezierSpline spline = splines[0];
 
-    //iterate through all splines and calculate length of each segment
-    for (size_t i = 0; i < spline.control_points.size() - 1; i += 3) {
+    //iterate through all control points and calculate length of each segment
+    for (size_t i = 0; i < spline.control_points.size()-1; i ++) {
         float length = getBezierLength(spline.control_points[i], spline.handles_right[i],
             spline.handles_left[i + 1], spline.control_points[i + 1]);
         segmentLengths.push_back(length);
@@ -108,8 +108,9 @@ WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines,
     float tSegment = 0.0f;
 
     //get corresponding segment based on position on larger curve, as well as the t value for that segment
-    for (size_t i = 0; i < segmentLengths.size(); ++i) {
+    for (size_t i = 0; i < segmentLengths.size(); i++) {
         float segmentProportion = segmentLengths[i] / totalLength;
+        //when t is in the current segment
         if (tNormalized < cumulativeProportion + segmentProportion) {
             segmentIndex = i;
             tSegment = (tNormalized - cumulativeProportion) / segmentProportion;
@@ -117,16 +118,12 @@ WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines,
         }
         cumulativeProportion += segmentProportion;
     }
-    int pointsPerSegment = 3; // This example assumes 4 points (P0, P1/P2 handles, P3) define each segment.
-
-    // For segmentIndex found from mapping tComposite to tNormalized
-    int startIndex = segmentIndex * pointsPerSegment;
 
     // Adjust indices based on your data structure
-    const auto& p0 = spline.control_points[startIndex];
-    const auto& p1 = spline.handles_right[startIndex];
-    const auto& p2 = spline.handles_left[startIndex + 1]; // Assuming next control point's left handle
-    const auto& p3 = spline.control_points[startIndex + 1]; // The next control point
+    const auto& p0 = spline.control_points[segmentIndex];
+    const auto& p1 = spline.handles_right[segmentIndex];
+    const auto& p2 = spline.handles_left[segmentIndex + 1]; // Assuming next control point's left handle
+    const auto& p3 = spline.control_points[segmentIndex + 1]; // The next control point
 
     WorldPosition result = { getBezierPoint(p0, p1, p2, p3, tSegment), getBezierDirection(p0, p1, p2, p3, tSegment) };
     return result;

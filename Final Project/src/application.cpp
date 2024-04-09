@@ -289,12 +289,14 @@ public:
             glm::quat meshOrientation;
             if (!anim_splines1.empty()) {
                 if (inAnimation) {
-                    if (animTimer < animDuration) {
+                    if (animTimer < animDuration - 0.1f) {
                         WorldPosition oldPos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
                         animTimer = (animTimer + 0.1f);
                         WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
                         //calculate how much the car moved in the last update
-                        carLocation.direction = pos.direction;
+                        if(animNumber == 1)
+                    		carLocation.direction = -pos.direction;
+                        else carLocation.direction = pos.direction;
                         shiftPos = pos.position - oldPos.position;
                         carLocation.position += shiftPos;
                     }

@@ -43,10 +43,10 @@ public:
             m_texture6("resources/skybox/right.jpg")
         {
             carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
-            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.0f, 0.0f));
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
             float distanceFromMesh = 40.0f; // How far the camera is from the mesh
-            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
+            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 5.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition - glm::vec3(0.0f, -4.0f,0.0f));
 
 
             glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
@@ -315,7 +315,7 @@ public:
             	std::cout << "No animation data loaded" << std::endl;
             }
 
-            float distanceFromMesh = 10.0f; // How far the camera is from the mesh
+            float distanceFromMesh = 40.0f; // How far the camera is from the mesh
             glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
             glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
 
@@ -330,24 +330,19 @@ public:
 
             // Create the view matrix
             glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carLocation.position, up);
-            if (inAnimation) {
-               
-                light_camera.changePos(light_camera.cameraPos() + shiftPos);
-            	topView.changePos(topView.cameraPos() + shiftPos);
-            }
+            
             if (moving) {
-                
                 if (forward) {
                     carLocation.position.z += 0.2f;
-                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
-                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2 });
                 }
                 else {
                     carLocation.position.z -= 0.2f;
-                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z - 0.2 });
-                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2});
                 }
             }
+            //SET CAMERA POSITION AND DIRECTION
+            light_camera.changePos(carLocation.position + meshOrientation * glm::vec3(1.0f, 5.0f, -distanceFromMesh));
+            light_camera.changeDir(meshOrientation, false);
+            topView.changePos(topView.cameraPos() + shiftPos);
 
             glm::mat4 view = camera.viewMatrix();
 

@@ -1,5 +1,7 @@
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
+
+#include "glm/fwd.hpp"
 DISABLE_WARNINGS_PUSH()
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -16,6 +18,8 @@ public:
     void updateInputLight();
     void setUserInteraction(bool enabled);
     void changePos(const glm::vec3& pos);
+    void changeDir(const glm::quat& dir, bool vertical);
+
 
 
     glm::vec3 cameraPos() const;

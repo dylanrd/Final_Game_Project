@@ -284,9 +284,8 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
-            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             glm::vec3 shiftPos = glm::vec3(0.0f, 0.0f, 0.0f);
-
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
             if (!anim_splines1.empty()) {
                 if (inAnimation) {
                     if (animTimer < animDuration) {
@@ -297,15 +296,12 @@ public:
                         carLocation.direction = pos.direction;
                         shiftPos = pos.position - oldPos.position;
                         carLocation.position += shiftPos;
-                        meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
-
                         std::cout << "moved car" << std::endl;
                         std::cout << "position: " << glm::to_string(carLocation.position) << std::endl;
                         std::cout << "direction: " << glm::to_string(carLocation.direction) << std::endl;
                         std::cout << "orientation: " << glm::to_string(meshOrientation) << std::endl;
                     }
                     else {
-                        //meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
                         inAnimation = false;
                         animTimer = 0.0f;
                         std::cout << "animation finished" << std::endl;
@@ -318,6 +314,10 @@ public:
             float distanceFromMesh = 40.0f; // How far the camera is from the mesh
             glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
             glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
+
+            //car orientation
+            meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+
 
             // Calculate the up vector (usually (0, 1, 0) for a top-down view)
             glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);

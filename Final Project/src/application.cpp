@@ -331,8 +331,8 @@ public:
 
             if (inAnimation) {
                
-                light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + carLocation.position.z });
-                topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + carLocation.position.z });
+                light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + (carLocation.position.z - light_camera.cameraPos().z )});
+                topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + (carLocation.position.z - topView.cameraPos().z)});
             }
             if (moving) {
                 

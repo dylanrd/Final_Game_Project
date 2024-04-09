@@ -88,10 +88,10 @@ float getBezierLength(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3&
 
 
 //function to get a point on the larger composite curve
-WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines, float tComposite) {
+WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines, float tComposite, int animation_number) {
     std::vector<float> segmentLengths;
     float totalLength = 0.0f;
-    BezierSpline spline = splines[0];
+    BezierSpline spline = splines[animation_number];
 
     //iterate through all control points and calculate length of each segment
     for (size_t i = 0; i < spline.control_points.size()-1; i ++) {

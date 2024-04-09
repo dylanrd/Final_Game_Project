@@ -20,9 +20,9 @@ glm::vec3 getBezierPoint(const glm::vec3& p0, const glm::vec3& p1, const glm::ve
 
 glm::vec3 getBezierDirection(const glm::vec3& p0, const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, float t, bool flip);
 
-WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines, float tComposite);
+WorldPosition getPointOnCompositeCurve(const std::vector<BezierSpline>& splines, float tComposite, int animNumber);
 
-std::vector<WorldPosition> getCompositeCurve(const std::vector<BezierSpline>& splines, int subdivisions = 20);
+std::vector<WorldPosition> getCompositeCurve(const std::vector<BezierSpline>& splines, int subdivisions);
 
 std::vector<BezierSpline> loadSplinesFromJSON(const std::string& filePath);
 

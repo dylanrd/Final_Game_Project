@@ -59,6 +59,7 @@ public:
             animTimer = 0.0f;
             animDuration = 10.0f;
             inAnimation = false;
+            animNumber = 0;
 
             Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
             Camera camera2{ &m_window, cameraPosition, direction };
@@ -285,25 +286,27 @@ public:
 
             camera.updateInput();
             glm::vec3 shiftPos = glm::vec3(0.0f, 0.0f, 0.0f);
-            glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            glm::quat meshOrientation;
             if (!anim_splines1.empty()) {
                 if (inAnimation) {
                     if (animTimer < animDuration) {
-						WorldPosition oldPos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration);
+                        WorldPosition oldPos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
                         animTimer = (animTimer + 0.1f);
-                        WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration);
+                        WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
                         //calculate how much the car moved in the last update
                         carLocation.direction = pos.direction;
                         shiftPos = pos.position - oldPos.position;
                         carLocation.position += shiftPos;
-                        std::cout << "moved car" << std::endl;
-                        std::cout << "position: " << glm::to_string(carLocation.position) << std::endl;
-                        std::cout << "direction: " << glm::to_string(carLocation.direction) << std::endl;
-                        std::cout << "orientation: " << glm::to_string(meshOrientation) << std::endl;
                     }
-                    else {
+                    else if (animNumber < anim_splines1.size()-1)
+                    {
+                        animTimer = 0.0f;
+                        animNumber++;
+                    }
+                    else{
                         inAnimation = false;
                         animTimer = 0.0f;
+                        animNumber = 0;
                         std::cout << "animation finished" << std::endl;
                     }
                 }
@@ -854,6 +857,7 @@ private:
   
     float animTimer;
     float animDuration;
+    int animNumber;
     std::vector <BezierSpline> anim_splines1;
     WorldPosition carLocation;
     float move;

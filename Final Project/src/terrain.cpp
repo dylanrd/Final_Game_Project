@@ -22,33 +22,25 @@ Terrain::Terrain(void)
 void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
-	const int count = VERTEX_COUNT * VERTEX_COUNT;
-	float vertices[count * 3];
-	float normals[count * 3];
-	float textureCoords[count * 2];
-	//int indices[6 * (VERTEX_COUNT - 1) * (VERTEX_COUNT - 1)];
-
-
+	
 	int vertexPointer = 0;
 	std::vector<terrainVertex> vertices2;
 	std::vector<glm::uvec3> triangles;
 	for (int i = 0; i < VERTEX_COUNT; i++) {
 		for (int j = 0; j < VERTEX_COUNT; j++) {
-			vertices[vertexPointer * 3] = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
-			vertices[vertexPointer * 3 + 1] = 0;
-			vertices[vertexPointer * 3 + 2] = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
+			float vert1 = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
+			float vert2 = 0;
+			float vert3 = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
 			
-			normals[vertexPointer * 3] = 0;
-			normals[vertexPointer * 3 + 1] = 1;
-			normals[vertexPointer * 3 + 2] = 0;
-			textureCoords[vertexPointer * 2] = (float) j / ((float)VERTEX_COUNT - 1);
-			textureCoords[vertexPointer * 2 + 1] = (float) i / ((float)VERTEX_COUNT - 1);
+			
+			float text1 = (float) j / ((float)VERTEX_COUNT - 1);
+			float text2 = (float) i / ((float)VERTEX_COUNT - 1);
 			vertexPointer++;
 
 			terrainVertex vertex{
-						.position = {vertices[vertexPointer * 3], vertices[vertexPointer * 3 + 1], vertices[vertexPointer * 3 + 2]},
-						.normal = {normals[vertexPointer * 3], normals[vertexPointer * 3 + 1], normals[vertexPointer * 3 + 2]},
-						.texCoord = {textureCoords[vertexPointer * 2], textureCoords[vertexPointer * 2 + 1]}
+						.position = {vert1,vert2,vert3},
+						.normal = {0, 1, 0},
+						.texCoord = {text1, text2}
 			};
 
 			vertices2.push_back(vertex);
@@ -64,13 +56,9 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 			int topRight = topLeft + 1;
 			int bottomLeft = ((gz + 1) * VERTEX_COUNT) + gx;
 			int bottomRight = bottomLeft + 1;
-			/*indices[pointer++] = topLeft;
-			indices[pointer++] = bottomLeft;
-			indices[pointer++] = topRight;*/
+			
 			triangles.push_back(glm::uvec3{topLeft, bottomLeft, topRight});
-			/*indices[pointer++] = topRight;
-			indices[pointer++] = bottomLeft;
-			indices[pointer++] = bottomRight;*/
+			
 			triangles.push_back(glm::uvec3{ topRight, bottomLeft, bottomRight });
 		}
 	}

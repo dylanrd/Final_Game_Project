@@ -339,9 +339,11 @@ public:
             if (moving) {
                 if (forward) {
                     carLocation.position.z += 0.2f;
+                    topView.changePos(glm::vec3{topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2});
                 }
                 else {
                     carLocation.position.z -= 0.2f;
+                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2 });
                 }
             }
             //SET CAMERA POSITION AND DIRECTION

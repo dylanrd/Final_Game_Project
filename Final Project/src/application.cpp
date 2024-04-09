@@ -4,6 +4,7 @@
 #include "texture.h"
 #include "terrain.h"
 #include "transformation.h"
+#include "animations.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
 #include <framework/disable_all_warnings.h>
@@ -26,7 +27,6 @@ DISABLE_WARNINGS_POP()
 #include <iostream>
 #include <vector>
 
-
 unsigned int loadCubemap(std::vector<std::string> faces);
 
 
@@ -40,105 +40,106 @@ public:
         m_texture3("resources/skybox/back.jpg"),
         m_texture4("resources/skybox/top.jpg"),
         m_texture5("resources/skybox/left.jpg"),
-        m_texture6("resources/skybox/right.jpg")
-    {
-        carPosition = { 0.f, 0.f, 0.f };
-        glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
-        float distanceFromMesh = 40.0f; // How far the camera is from the mesh
-        glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-        glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
-        
-        
-        glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
-        glm::vec3 cameraPositionTop = carPosition + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-        glm::vec3 directionTop = glm::normalize(carPosition - cameraPositionTop);
-        
-        
-
-        
-        
-        Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
-        Camera camera2{ &m_window, cameraPosition, direction };
-        Camera camera3{ &m_window, cameraPositionTop, directionTop };
-        topView = camera3;
-        light_camera = camera2;
-        camera = camera1;
-        temp = { &m_window };
-        cam1 = true;
-        top = false;
-        move = 0.f;
-        moving = false;
-        forward = false;
-
-        kd = false;
-        bphong = false;
-       
-
-        
-        //terrain = Terrain();
-        //transform = Transformation();
-        m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
-            if (action == GLFW_PRESS)
-                onKeyPressed(key, mods);
-            else if (action == GLFW_RELEASE)
-                onKeyReleased(key, mods);
-
-            
-        });
-        m_window.registerMouseMoveCallback(std::bind(&Application::onMouseMove, this, std::placeholders::_1));
-        m_window.registerMouseButtonCallback([this](int button, int action, int mods) {
-            if (action == GLFW_PRESS)
-                onMouseClicked(button, mods);
-            else if (action == GLFW_RELEASE)
-                onMouseReleased(button, mods);
-        });
-
-        m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
-        road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
-        skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
-        arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
-
-        try {
-            ShaderBuilder defaultBuilder;
-            defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
-            defaultBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/shader_frag.glsl");
-            m_defaultShader = defaultBuilder.build();
-
-      
-            m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
-
-            ShaderBuilder kdShaderBuilder;
-            kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
-            kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
-            m_kdShader = kdShaderBuilder.build();
-
-            
-
-            ShaderBuilder shadowBuilder;
-            shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
-            m_shadowShader = shadowBuilder.build();
-
-            ShaderBuilder skyboxBuilder;
-            skyboxBuilder.addStage(GL_VERTEX_SHADER, "shaders/skybox_vert.glsl");
-            skyboxBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/skybox_frag.glsl");
-            m_skyboxShader = skyboxBuilder.build();
-
-            ShaderBuilder environmentShader;
-            environmentShader.addStage(GL_VERTEX_SHADER, "shaders/env_vert.glsl");
-            environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
-            m_environmentShader = environmentShader.build();
+            m_texture6("resources/skybox/right.jpg")
+        {
+            carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f) };
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
+            float distanceFromMesh = 40.0f; // How far the camera is from the mesh
+            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
 
 
-            // Any new shaders can be added below in similar fashion.
-            // ==> Don't forget to reconfigure CMake when you do!
-            //     Visual Studio: PROJECT => Generate Cache for ComputerGraphics
-            //     VS Code: ctrl + shift + p => CMake: Configure => enter
-            // ....
-        } catch (ShaderLoadingException e) {
-            std::cerr << e.what() << std::endl;
-        }
+            glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
+            glm::vec3 cameraPositionTop = carLocation.position + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 directionTop = glm::normalize(carLocation.position - cameraPositionTop);
 
-    }
+
+            anim_splines1 = loadSplinesFromJSON("resources/animations/BezierCurve1_data.json");
+            std::cout << "loaded splines: " << !anim_splines1.empty() << std::endl;
+            animTimer = 0.0f;
+            animDuration = 5.0f;
+            inAnimation = false;
+
+            Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+            Camera camera2{ &m_window, cameraPosition, direction };
+            Camera camera3{ &m_window, cameraPositionTop, directionTop };
+            topView = camera3;
+            light_camera = camera2;
+            camera = camera1;
+            temp = { &m_window };
+            cam1 = true;
+            top = false;
+            moving = false;
+            forward = false;
+
+            kd = false;
+            bphong = false;
+
+
+
+            //terrain = Terrain();
+            //transform = Transformation();
+            m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
+                if (action == GLFW_PRESS)
+                    onKeyPressed(key, mods);
+                else if (action == GLFW_RELEASE)
+                    onKeyReleased(key, mods);
+                });
+            m_window.registerMouseMoveCallback(std::bind(&Application::onMouseMove, this, std::placeholders::_1));
+            m_window.registerMouseButtonCallback([this](int button, int action, int mods) {
+                if (action == GLFW_PRESS)
+                    onMouseClicked(button, mods);
+                else if (action == GLFW_RELEASE)
+                    onMouseReleased(button, mods);
+                });
+
+            m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
+            road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
+            skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
+            arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
+
+            try {
+                ShaderBuilder defaultBuilder;
+                defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
+                defaultBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/shader_frag.glsl");
+                m_defaultShader = defaultBuilder.build();
+
+
+                m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
+
+                ShaderBuilder kdShaderBuilder;
+                kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
+                kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
+                m_kdShader = kdShaderBuilder.build();
+
+
+
+                ShaderBuilder shadowBuilder;
+                shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
+                m_shadowShader = shadowBuilder.build();
+
+                ShaderBuilder skyboxBuilder;
+                skyboxBuilder.addStage(GL_VERTEX_SHADER, "shaders/skybox_vert.glsl");
+                skyboxBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/skybox_frag.glsl");
+                m_skyboxShader = skyboxBuilder.build();
+
+                ShaderBuilder environmentShader;
+                environmentShader.addStage(GL_VERTEX_SHADER, "shaders/env_vert.glsl");
+                environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
+                m_environmentShader = environmentShader.build();
+
+
+                // Any new shaders can be added below in similar fashion.
+                // ==> Don't forget to reconfigure CMake when you do!
+                //     Visual Studio: PROJECT => Generate Cache for ComputerGraphics
+                //     VS Code: ctrl + shift + p => CMake: Configure => enter
+                // ....
+            }
+            catch (ShaderLoadingException e) {
+                std::cerr << e.what() << std::endl;
+            }
+
+        };
 
 
 
@@ -283,11 +284,38 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
-           
             glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+
+            if (!anim_splines1.empty()) {
+                if (inAnimation) {
+                    if (animTimer < animDuration) {
+						WorldPosition oldPos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration);
+                        animTimer = (animTimer + 0.1f);
+                        WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration);
+                        //calculate how much the car moved in the last update
+                        carLocation.direction = pos.direction;
+                        carLocation.position += pos.position - oldPos.position;
+                        meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+
+                        std::cout << "moved car" << std::endl;
+                        std::cout << "position: " << glm::to_string(carLocation.position) << std::endl;
+                        std::cout << "direction: " << glm::to_string(carLocation.direction) << std::endl;
+                        std::cout << "orientation: " << glm::to_string(meshOrientation) << std::endl;
+                    }
+                    else {
+                        //meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                        inAnimation = false;
+                        animTimer = 0.0f;
+                        std::cout << "animation finished" << std::endl;
+                    }
+                }
+            } else {
+            	std::cout << "No animation data loaded" << std::endl;
+            }
+
             float distanceFromMesh = 10.0f; // How far the camera is from the mesh
-            glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-            glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
+            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
 
             // Calculate the up vector (usually (0, 1, 0) for a top-down view)
             glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -299,17 +327,15 @@ public:
             up = glm::cross(direction, right);
 
             // Create the view matrix
-            glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carPosition, up);
+            glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carLocation.position, up);
             if (moving) {
                 if (forward) {
-                    move = move + 0.2f;
-                    carPosition.z += 0.2f;
+                    carLocation.position.z += 0.2f;
                     light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
                     topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2 });
                 }
                 else {
-                    move = move - 0.2f;
-                    carPosition.z -= 0.2f;
+                    carLocation.position.z -= 0.2f;
                     light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z - 0.2 });
                     topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2});
                 }
@@ -324,8 +350,12 @@ public:
             else if (!cam1) {
                 view = light_camera.viewMatrix();
             }
-            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
-            m_modelMatrix = translationMatrix;
+
+            //TRANSLATE CAR MODEL ACCORDING TO ANIMATION
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{carLocation.position});
+            glm::mat4 rotationMatrix = glm::mat4_cast(meshOrientation);
+
+            m_modelMatrix = translationMatrix * rotationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 
             glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
@@ -492,8 +522,6 @@ public:
             terrain.renderTerrain(view, camera.cameraPos());
             
             //transform.renderCylinder(view, camera.cameraPos());
-            
-
 
             m_window.swapBuffers();
         }
@@ -553,6 +581,10 @@ public:
             bphong = !bphong;
             std::cout << "blinn phong is " << bphong << std::endl;
             break;
+        case GLFW_KEY_C:
+            inAnimation = !inAnimation;
+            std::cout << "playing animation: " << inAnimation << std::endl;
+            break;
         default:
             break;
         }
@@ -576,7 +608,7 @@ public:
     // If the mouse is moved this function will be called with the x, y screen-coordinates of the mouse
     void onMouseMove(const glm::dvec2& cursorPos)
     {
-        std::cout << "Mouse at position: " << cursorPos.x << " " << cursorPos.y << std::endl;
+        //std::cout << "Mouse at position: " << cursorPos.x << " " << cursorPos.y << std::endl;
     }
 
     // If one of the mouse buttons is pressed this function will be called
@@ -630,14 +662,18 @@ private:
     Camera temp{ &m_window};
     bool cam1{ true };
     bool top{ false };
-    glm::vec3 carPosition;
     Terrain terrain;
     Transformation transform;
+    float animTimer;
+    float animDuration;
+    std::vector <BezierSpline> anim_splines1;
+    WorldPosition carLocation;
     float move;
     bool moving;
     bool forward;
     bool kd;
     bool bphong;
+    bool inAnimation;
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
@@ -656,6 +692,8 @@ private:
     
 };
 
+
+
 int main()
 {
     Application app;
@@ -668,3 +706,5 @@ unsigned int Application::loadCubemap(std::vector<std::string> faces)
 {
     return 0;
 }
+
+

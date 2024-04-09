@@ -15,8 +15,8 @@ add_executable(FinalProject
     "src/texture.cpp"
 	"src/mesh.cpp"
 	"src/animations.cpp"
- "src/transformation.cpp" "src/camera.cpp" "src/camera.h" "src/terrain.cpp" "src/terrain.h"
- "src/transformation.h"  "src/animations.h")
+ "src/camera.cpp" "src/camera.h" "src/terrain.cpp" "src/terrain.h"
+   "src/animations.h")
 target_compile_features(FinalProject PRIVATE cxx_std_20)
 target_link_libraries(FinalProject PRIVATE CGFramework)
 enable_sanitizers(FinalProject)

@@ -3,7 +3,6 @@
 #include "mesh.h"
 #include "texture.h"
 #include "terrain.h"
-#include "transformation.h"
 #include "animations.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
@@ -329,7 +328,14 @@ public:
 
             // Create the view matrix
             glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carLocation.position, up);
+
+            if (inAnimation) {
+               
+                light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + carLocation.position.z });
+                topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + carLocation.position.z });
+            }
             if (moving) {
+                
                 if (forward) {
                     carLocation.position.z += 0.2f;
                     light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
@@ -849,7 +855,7 @@ private:
     bool cam1{ true };
     bool top{ false };
     Terrain terrain;
-    Transformation transform;
+  
     float animTimer;
     float animDuration;
     std::vector <BezierSpline> anim_splines1;

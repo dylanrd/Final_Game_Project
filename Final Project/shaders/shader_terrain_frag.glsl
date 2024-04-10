@@ -9,21 +9,23 @@ layout(std140) uniform Material // Must match the GPUMaterial defined in src/mes
 	float transparency;
 };
 
-layout (std140, binding = 8) uniform MyUniformBlock {
-    vec3 myArray[2]; // This must match the structure defined in the application
-};
+//layout (std140, binding = 8) uniform MyUniformBlock {
+//    vec3 myArray[2]; // This must match the structure defined in the application
+//};
 
-layout (std140, binding = 9) uniform MyUniformBlock2 {
-    vec3 myArray2[2]; // This must match the structure defined in the application
-};
+//layout (std140, binding = 9) uniform MyUniformBlock2 {
+//    vec3 myArray2[2]; // This must match the structure defined in the application
+//};
 
 layout(location = 3) uniform sampler2D colorMap;
 layout(location = 4) uniform sampler2D normalMap;
 layout(location = 5) uniform bool useMaterial;
-layout(location = 6) uniform vec3 lightPos;
-layout(location = 7) uniform vec3 attenuation;
-//layout(location = 9) uniform vec3 myArray[0];
-//layout(location = 10) uniform vec3 myArray[1];
+
+layout(location = 11) uniform vec3 myArray2[2]; //attenuations
+
+layout(location = 7) uniform vec3 myArray[2]; //positions
+
+
 
 in vec3 fragPosition;
 in vec3 fragNormal;
@@ -56,9 +58,9 @@ void main()
     vec3 accCol = vec3(0.0);
  
 
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 2; i++) {
 
-        float distance = length(myArray[0] - fragPosition);
+        float distance = length(myArray[i] - fragPosition);
         
         float attenuationFactor = myArray2[i].x + (myArray2[i].y * distance) + (myArray2[i].z * distance * distance);
         
@@ -78,7 +80,7 @@ void main()
         //accCol = accCol + (kd * dot(norm, normalize(myArray[i] - fragPosition)))/ attenuationFactor;
     }
     
-    vec3 col = kd * dot(norm,TBN *  normalize(lightPos - fragPosition));
+    
     vec3 result = (accDiff + accSpec);
 
     vec3 transparentColor = vec3(1.0, 1.0, 1.0); // Assuming white is fully transparent

@@ -77,8 +77,8 @@ public:
             kd = false;
             bphong = false;
 
-            light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.001f,0.0002f });
-            light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.001f,0.0002f });
+            light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
+            light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
             
             
             //terrain = Terrain();

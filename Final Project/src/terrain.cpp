@@ -174,41 +174,22 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
 
 
 	
-		
-	GLuint myBuffer;
-	glGenBuffers(1, &myBuffer);
-	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
-	glm::vec3 myArray[2];
+
+	glm::vec3 positions[2];
 	
 	for (int i = 0; i < 2; i++) {
-		myArray[i] = lights[i].returnPos();
+		positions[i] = lights[i].returnPos();
 	}
 	
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(myArray), &myArray, GL_STATIC_DRAW);
-	
-	// Bind the buffer to a specific binding point index
-	GLuint bindingPointIndex = 8; // This is just an example index
-	glBindBufferBase(GL_UNIFORM_BUFFER, bindingPointIndex, myBuffer);
+	glUniform3fv(7, 2, glm::value_ptr(positions[0]));
 
-	GLuint myBuffer2;
-	glGenBuffers(2, &myBuffer2);
-	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer2);
-
-	glm::vec3 myArray2[2];
+	glm::vec3 attenuation[2];
 
 	for (int i = 0; i < 2; i++) {
-		myArray2[i] = lights[i].returnAttenuation();
-		glUniform3fv(9 + i, 1, glm::value_ptr(myArray2[i]));
-
-		
+		attenuation[i] = lights[i].returnAttenuation();
 	}
 
-	std::cout << glm::to_string(myArray2[1]) << std::endl;
-	glBufferData(GL_UNIFORM_BUFFER, sizeof(myArray2), &myArray2, GL_STATIC_DRAW);
-
-	// Bind the buffer to a specific binding point index
-	GLuint bindingPointIndex2 = 9; // This is just an example index
-	glBindBufferBase(GL_UNIFORM_BUFFER, bindingPointIndex2, myBuffer2);
+	glUniform3fv(11, 2, glm::value_ptr(attenuation[0]));
 
 	GLuint VAO, VBO, IBO;
 	

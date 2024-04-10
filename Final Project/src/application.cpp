@@ -27,8 +27,8 @@ DISABLE_WARNINGS_POP()
 #include <iostream>
 #include <vector>
 #include <span>
+#include <chrono>
 
-unsigned int loadCubemap(std::vector<std::string> faces);
 
 
 
@@ -61,7 +61,7 @@ public:
             animDuration = 10.0f;
             inAnimation = false;
             animNumber = 0;
-
+            dayFactor = 1;
             Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
             Camera camera2{ &m_window, cameraPosition, direction };
             Camera camera3{ &m_window, cameraPositionTop, directionTop };
@@ -261,10 +261,19 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         GLuint cubeMapTexture = textureID;
-        
 
+        
+        auto startTime = std::chrono::system_clock::now();
+        double elapsedTime = 0.0;
+        auto now = std::chrono::system_clock::now();
+        double rawValue = 0.0;
         while (!m_window.shouldClose()) {
-            
+            now = std::chrono::system_clock::now();
+            elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
+            rawValue = fmod(elapsedTime, 30) / 30;
+            rawValue = rawValue < 0.5 ? rawValue * 2.0 : (1.0 - rawValue) * 2.0;
+            dayFactor = 0.3 + (1.0 - 0.3) * rawValue;
+
 
             // This is your game loop
             // Put your real-time logic and rendering in here
@@ -703,7 +712,7 @@ public:
                     glUniform1i(4, GL_TRUE);
                     glUniform1i(5, GL_FALSE);
                     glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
+                    glUniform1f(7, dayFactor);
                     mesh.draw(m_skyboxShader);
                 }
 
@@ -716,7 +725,7 @@ public:
 
 
 
-                terrain.renderTerrain(view, light.returnLight());
+                //terrain.renderTerrain(view, light.returnLight());
 
  
             //////////////////////////
@@ -873,6 +882,8 @@ private:
     bool kd;
     bool bphong;
     bool inAnimation;
+
+    float dayFactor;
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));

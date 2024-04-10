@@ -172,9 +172,6 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
 	glUniform1i(4, 1);
 
 
-
-	
-
 	glm::vec3 positions[2];
 	
 	for (int i = 0; i < 2; i++) {

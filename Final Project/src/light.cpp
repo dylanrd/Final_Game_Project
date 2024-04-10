@@ -31,10 +31,18 @@ std::vector<Light> Light::returnLight() {
     return lights;
 }
 
+Light Light::returnLightIndex(int index) {
+    return lights[index];
+}
+
 
 void Light::changePos(const glm::vec3& pos)
 {
     m_position = pos;
+}
+
+void Light::replace(Light& light, int index) {
+    lights[index] = light;
 }
 
 glm::vec3 Light::returnPos() {

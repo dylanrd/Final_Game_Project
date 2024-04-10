@@ -607,6 +607,14 @@ public:
 
                 }
 
+                glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
+                newLightPos = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * glm::vec4(1);
+
+
+                Light l = Light(newLightPos, glm::vec3(1), light.returnLightIndex(0).returnAttenuation());
+                light.replace(l, 0);
+               
+
                 glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
                 for (GPUMesh& mesh : arm) {
 
@@ -692,7 +700,12 @@ public:
 
                 }
 
+                glm::vec4 newLightPos2;
+                newLightPos2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * glm::vec4(1);
 
+
+                Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
+                light.replace(l, 1);
 
 
 

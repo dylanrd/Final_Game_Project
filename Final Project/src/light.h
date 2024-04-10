@@ -18,16 +18,16 @@ public:
     std::vector<Light> returnLight();
     void addLight(glm::vec3 position, glm::vec3 colour, glm::vec3 attenuation);
     int getSize();
-    Light* returnAllPos();
+    Light returnLightIndex(int index);
     void changePos(const glm::vec3& pos);
     void changeAttenuation(const glm::vec3& att);
-   
+    void replace(Light& light, int index);
 
 
 
     glm::vec3 returnPos();
     glm::vec3 returnAttenuation();
-   
+    glm::vec3 m_position{ 0 };
 
 private:
     void rotateX(float angle);
@@ -35,7 +35,7 @@ private:
 
 private:
     static constexpr glm::vec3 s_yAxis{ 0, 1, 0 };
-    glm::vec3 m_position{ 0 };
+   
     glm::vec3 m_colour{ 0, 0, -1 };
     glm::vec3 m_up{ 0, 1, 0 };
 

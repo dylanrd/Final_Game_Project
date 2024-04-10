@@ -393,17 +393,7 @@ public:
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
             
-                m_environmentShader.bind();
-                glBindVertexArray(0);
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
-                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
-                glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
-                glBindVertexArray(cubeVAO);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
-                glBindVertexArray(0);
+               
 
                 for (GPUMesh& mesh : m_meshes) {
                     if (!kd && !bphong) {
@@ -729,7 +719,18 @@ public:
                     mesh.draw(m_skyboxShader);
                 }
 
-
+                m_environmentShader.bind();
+                glBindVertexArray(0);
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
+                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+                glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
+                glUniform1f(4, dayFactor);
+                glBindVertexArray(cubeVAO);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+                glBindVertexArray(0);
 
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -738,7 +739,7 @@ public:
 
 
 
-                //terrain.renderTerrain(view, light.returnLight());
+                terrain.renderTerrain(view, light.returnLight());
 
  
             //////////////////////////

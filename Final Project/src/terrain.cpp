@@ -1,4 +1,5 @@
 #include "terrain.h"
+
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -14,12 +15,13 @@ DISABLE_WARNINGS_POP()
 
 
 
+
 Terrain::Terrain(void)
     
 {
 }
 
-void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
 	
@@ -160,8 +162,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
 	glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-	glUniform3fv(6, 1, glm::value_ptr(cameraPosition));
-	
+		
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texLight);
 	glUniform1i(3, 0);
@@ -169,7 +170,46 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, normalMap);
 	glUniform1i(4, 1);
+
+
+
+	
 		
+	GLuint myBuffer;
+	glGenBuffers(1, &myBuffer);
+	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer);
+	glm::vec3 myArray[2];
+	
+	for (int i = 0; i < 2; i++) {
+		myArray[i] = lights[i].returnPos();
+	}
+	
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(myArray), &myArray, GL_STATIC_DRAW);
+	
+	// Bind the buffer to a specific binding point index
+	GLuint bindingPointIndex = 8; // This is just an example index
+	glBindBufferBase(GL_UNIFORM_BUFFER, bindingPointIndex, myBuffer);
+
+	GLuint myBuffer2;
+	glGenBuffers(2, &myBuffer2);
+	glBindBuffer(GL_UNIFORM_BUFFER, myBuffer2);
+
+	glm::vec3 myArray2[2];
+
+	for (int i = 0; i < 2; i++) {
+		myArray2[i] = lights[i].returnAttenuation();
+		glUniform3fv(9 + i, 1, glm::value_ptr(myArray2[i]));
+
+		
+	}
+
+	std::cout << glm::to_string(myArray2[1]) << std::endl;
+	glBufferData(GL_UNIFORM_BUFFER, sizeof(myArray2), &myArray2, GL_STATIC_DRAW);
+
+	// Bind the buffer to a specific binding point index
+	GLuint bindingPointIndex2 = 9; // This is just an example index
+	glBindBufferBase(GL_UNIFORM_BUFFER, bindingPointIndex2, myBuffer2);
+
 	GLuint VAO, VBO, IBO;
 	
 	glCreateBuffers(1, &IBO);

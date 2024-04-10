@@ -4,6 +4,7 @@
 #include "texture.h"
 #include "terrain.h"
 #include "animations.h"
+#include "light.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
 #include <framework/disable_all_warnings.h>
@@ -76,8 +77,10 @@ public:
             kd = false;
             bphong = false;
 
-
-
+            light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.001f,0.0002f });
+            light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.001f,0.0002f });
+            
+            
             //terrain = Terrain();
             //transform = Transformation();
             m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
@@ -380,7 +383,7 @@ public:
             
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
-            for (Light current_light : lights) {
+            
                 m_environmentShader.bind();
                 glBindVertexArray(0);
                 glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
@@ -408,7 +411,7 @@ public:
                         else {
                             glUniform1i(4, GL_FALSE);
                             glUniform1i(5, GL_TRUE);
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
                         }
                         mesh.draw(m_defaultShader);
 
@@ -420,7 +423,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -430,7 +433,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_bphongShader);
 
@@ -532,7 +535,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -542,7 +545,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_bphongShader);
 
@@ -575,7 +578,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
                             }
@@ -585,7 +588,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_bphongShader);
 
@@ -617,7 +620,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -627,7 +630,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_bphongShader);
 
@@ -660,7 +663,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
                             }
@@ -670,7 +673,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_bphongShader);
 
@@ -699,7 +702,7 @@ public:
                     glUniform1i(3, i + 1);
                     glUniform1i(4, GL_TRUE);
                     glUniform1i(5, GL_FALSE);
-                    glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                     mesh.draw(m_skyboxShader);
                 }
@@ -713,9 +716,9 @@ public:
 
 
 
-                terrain.renderTerrain(view, current_light.position);
+                terrain.renderTerrain(view, light.returnLight());
 
-            }
+ 
             //////////////////////////
 
             m_window.swapBuffers();
@@ -882,11 +885,13 @@ private:
     glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
     glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
     glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-    struct Light {
+    /*struct Light {
         glm::vec3 position;
         glm::vec3 color;
+        glm::vec3 attenuation;
     };
-    std::vector<Light> lights{ Light { glm::vec3(0, 0, 3), glm::vec3(1) } };
+    std::vector<Light> lights{ Light { glm::vec3(20,5, 30), glm::vec3(1), glm::vec3{1,0.1f,0.02f} }, Light { glm::vec3(-20,5, -30), glm::vec3(1), glm::vec3{1,0.1f,0.02f} } };*/
+    Light light;
     
 };
 

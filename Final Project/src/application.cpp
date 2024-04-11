@@ -302,9 +302,17 @@ public:
                 sunY *= -1;
             }
             
-            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1,0.01f,0.002f });
+            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 0.001f,0.00f,0.000f });
             light.replace(s, 2);
 
+            glm::vec3 positions[3];
+            glm::vec3 attenuation[3];
+            for (int i = 0; i < 3; i++) {
+                positions[i] = light.returnLight()[i].returnPos();
+            }
+            for (int i = 0; i < 3; i++) {
+                attenuation[i] = light.returnLight()[i].returnAttenuation();
+            }
             // This is your game loop
             // Put your real-time logic and rendering in here
             m_window.updateInput();
@@ -419,53 +427,24 @@ public:
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
             
-               
 
             for (GPUMesh& mesh : m_meshes) {
-                if (!kd && !bphong) {
-                    m_defaultShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                    if (mesh.hasTextureCoords()) {
-                        m_texture1.bind(GL_TEXTURE0);
-                        glUniform1i(3, 0);
-                        glUniform1i(4, GL_TRUE);
-                        glUniform1i(5, GL_FALSE);
-                    }
-                    else {
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, GL_TRUE);
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-                    }
-                    mesh.draw(m_defaultShader);
 
-                }
-                else {
-                    if (kd) {
-                        m_kdShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                m_bphongShader.bind();
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                
 
-                        mesh.draw(m_kdShader);
-                    }
-                    else {
-                        m_bphongShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                mesh.draw(m_bphongShader);
 
-                        mesh.draw(m_bphongShader);
-
-                    }
-                }
 
             }
+                
 
                 
                  ///////////////////////////////////////////////////// START ROBOT ARM //////////////////////////////////////////////////////////////////////////
@@ -502,7 +481,8 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                            glUniform3fv(6, 1, glm::value_ptr(positions[0]));
+                            glUniform3fv(11, 1, glm::value_ptr(attenuation[0]));
 
                             mesh.draw(m_bphongShader);
 
@@ -545,7 +525,8 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                                glUniform3fv(6, 1, glm::value_ptr(positions[0]));
+                                glUniform3fv(11, 1, glm::value_ptr(attenuation[0]));
 
                                 mesh.draw(m_bphongShader);
 
@@ -565,42 +546,18 @@ public:
 
                 glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
                 for (GPUMesh& mesh : arm) {
-
-
                     m_modelMatrix = translationMatrixArm2;
                     const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                    if (!kd && !bphong) {
-                        m_defaultShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                        mesh.draw(m_defaultShader);
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
-                    }
-                    else {
-                        if (kd) {
-                            m_kdShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
-                            mesh.draw(m_kdShader);
-                        }
-                        else {
-                            m_bphongShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
-                            mesh.draw(m_bphongShader);
-
-                        }
-                    }
+                    mesh.draw(m_bphongShader);                
                 }
 
 
@@ -612,38 +569,16 @@ public:
                         translationMatrixArm2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * rotationS;
                         m_modelMatrix = translationMatrixArm2;
                         const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                        if (!kd && !bphong) {
-                            m_defaultShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            mesh.draw(m_defaultShader);
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
-                        }
-                        else {
-                            if (kd) {
-                                m_kdShader.bind();
-                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
-                                mesh.draw(m_kdShader);
-                            }
-                            else {
-                                m_bphongShader.bind();
-                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
-                                mesh.draw(m_bphongShader);
-
-                            }
-                        }
+                        mesh.draw(m_bphongShader);
                     }
 
                 }
@@ -671,9 +606,7 @@ public:
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
                     glUniform1i(3, i + 1);
-                    glUniform1i(4, GL_TRUE);
-                    glUniform1i(5, GL_FALSE);
-                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                   
                     glUniform1f(7, dayFactor);
                     mesh.draw(m_skyboxShader);
                 }

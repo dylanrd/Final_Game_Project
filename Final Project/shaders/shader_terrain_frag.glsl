@@ -21,9 +21,9 @@ layout(location = 3) uniform sampler2D colorMap;
 layout(location = 4) uniform sampler2D normalMap;
 layout(location = 5) uniform bool useMaterial;
 
-layout(location = 11) uniform vec3 myArray2[2]; //attenuations
+layout(location = 11) uniform vec3 myArray2[3]; //attenuations
 
-layout(location = 7) uniform vec3 myArray[2]; //positions
+layout(location = 7) uniform vec3 myArray[3]; //positions
 
 
 
@@ -58,7 +58,7 @@ void main()
     vec3 accCol = vec3(0.0);
  
 
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
 
         float distance = length(myArray[i] - fragPosition);
         

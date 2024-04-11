@@ -3,6 +3,8 @@
 #include "mesh.h"
 #include "texture.h"
 #include "terrain.h"
+#include "animations.h"
+#include "light.h"
 // Always include window first (because it includes glfw, which includes GL which needs to be included AFTER glew).
 // Can't wait for modules to fix this stuff...
 #include <framework/disable_all_warnings.h>
@@ -25,8 +27,9 @@ DISABLE_WARNINGS_POP()
 #include <iostream>
 #include <vector>
 #include <span>
+#include <chrono>
+#include <numbers>
 
-unsigned int loadCubemap(std::vector<std::string> faces);
 
 
 
@@ -39,105 +42,116 @@ public:
         m_texture3("resources/skybox/back.jpg"),
         m_texture4("resources/skybox/top.jpg"),
         m_texture5("resources/skybox/left.jpg"),
-        m_texture6("resources/skybox/right.jpg")
-    {
-        carPosition = { 0.f, 0.f, 0.f };
-        glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.5f, 0.f, 0.0f));
-        float distanceFromMesh = 40.0f; // How far the camera is from the mesh
-        glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-        glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
-        
-        
-        glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
-        glm::vec3 cameraPositionTop = carPosition + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-        glm::vec3 directionTop = glm::normalize(carPosition - cameraPositionTop);
-        
-        
+            m_texture6("resources/skybox/right.jpg")
+        {
+            carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
+            glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            float distanceFromMesh = 40.0f; // How far the camera is from the mesh
+            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 5.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition - glm::vec3(0.0f, -4.0f,0.0f));
 
-        
-        
-        Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
-        Camera camera2{ &m_window, cameraPosition, direction };
-        Camera camera3{ &m_window, cameraPositionTop, directionTop };
-        topView = camera3;
-        light_camera = camera2;
-        camera = camera1;
-        temp = { &m_window };
-        cam1 = true;
-        top = false;
-        move = 0.f;
-        moving = false;
-        forward = false;
 
-        kd = false;
-        bphong = false;
-       
+            glm::quat meshOrientationTop = glm::angleAxis(glm::radians(89.0f), glm::vec3(1.f, 0.f, 0.0f));
+            glm::vec3 cameraPositionTop = carLocation.position + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 directionTop = glm::normalize(carLocation.position - cameraPositionTop);
 
-        
-        //terrain = Terrain();
-        //transform = Transformation();
-        m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
-            if (action == GLFW_PRESS)
-                onKeyPressed(key, mods);
-            else if (action == GLFW_RELEASE)
-                onKeyReleased(key, mods);
 
+            anim_splines1 = loadSplinesFromJSON("resources/animations/BezierCurve1_data.json");
+            std::cout << "loaded splines: " << !anim_splines1.empty() << std::endl;
+            animTimer = 0.0f;
+            animDuration = 10.0f;
+            inAnimation = false;
+            animNumber = 0;
+            dayFactor = 1;
+            Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+            Camera camera2{ &m_window, cameraPosition, direction };
+            Camera camera3{ &m_window, cameraPositionTop, directionTop };
+            topView = camera3;
+            light_camera = camera2;
+            camera = camera1;
+            temp = { &m_window };
+            cam1 = true;
+            top = false;
+            moving = false;
+            forward = false;
+
+            kd = false;
+            bphong = false;
+
+
+            procedural = false;
+            light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
+            light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
+            light.addLight(glm::vec3(0, 200, 0), glm::vec3{ 0.9922f, 0.7216f,  0.0745f }, glm::vec3{ 1,0,0 });
             
-        });
-        m_window.registerMouseMoveCallback(std::bind(&Application::onMouseMove, this, std::placeholders::_1));
-        m_window.registerMouseButtonCallback([this](int button, int action, int mods) {
-            if (action == GLFW_PRESS)
-                onMouseClicked(button, mods);
-            else if (action == GLFW_RELEASE)
-                onMouseReleased(button, mods);
-        });
+            //terrain = Terrain();
+            //transform = Transformation();
+            m_window.registerKeyCallback([this](int key, int scancode, int action, int mods) {
+                if (action == GLFW_PRESS)
+                    onKeyPressed(key, mods);
+                else if (action == GLFW_RELEASE)
+                    onKeyReleased(key, mods);
+                });
+            m_window.registerMouseMoveCallback(std::bind(&Application::onMouseMove, this, std::placeholders::_1));
+            m_window.registerMouseButtonCallback([this](int button, int action, int mods) {
+                if (action == GLFW_PRESS)
+                    onMouseClicked(button, mods);
+                else if (action == GLFW_RELEASE)
+                    onMouseReleased(button, mods);
+                });
 
-        m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
-        road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
-        skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
-        arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
+            m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
+            road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
+            skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
+            arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
+            sun = GPUMesh::loadMeshGPU("resources/sun.obj");
 
-        try {
-            ShaderBuilder defaultBuilder;
-            defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
-            defaultBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/shader_frag.glsl");
-            m_defaultShader = defaultBuilder.build();
-
-      
-            m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
-
-            ShaderBuilder kdShaderBuilder;
-            kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
-            kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
-            m_kdShader = kdShaderBuilder.build();
-
-            
-
-            ShaderBuilder shadowBuilder;
-            shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
-            m_shadowShader = shadowBuilder.build();
-
-            ShaderBuilder skyboxBuilder;
-            skyboxBuilder.addStage(GL_VERTEX_SHADER, "shaders/skybox_vert.glsl");
-            skyboxBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/skybox_frag.glsl");
-            m_skyboxShader = skyboxBuilder.build();
-
-            ShaderBuilder environmentShader;
-            environmentShader.addStage(GL_VERTEX_SHADER, "shaders/env_vert.glsl");
-            environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
-            m_environmentShader = environmentShader.build();
+            try {
+                ShaderBuilder defaultBuilder;
+                defaultBuilder.addStage(GL_VERTEX_SHADER, "shaders/shader_vert.glsl");
+                defaultBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/shader_frag.glsl");
+                m_defaultShader = defaultBuilder.build();
 
 
-            // Any new shaders can be added below in similar fashion.
-            // ==> Don't forget to reconfigure CMake when you do!
-            //     Visual Studio: PROJECT => Generate Cache for ComputerGraphics
-            //     VS Code: ctrl + shift + p => CMake: Configure => enter
-            // ....
-        } catch (ShaderLoadingException e) {
-            std::cerr << e.what() << std::endl;
-        }
+                m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
 
-    }
+                ShaderBuilder kdShaderBuilder;
+                kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
+                kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
+                m_kdShader = kdShaderBuilder.build();
+
+
+
+                ShaderBuilder shadowBuilder;
+                shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
+                m_shadowShader = shadowBuilder.build();
+
+                ShaderBuilder skyboxBuilder;
+                skyboxBuilder.addStage(GL_VERTEX_SHADER, "shaders/skybox_vert.glsl");
+                skyboxBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/skybox_frag.glsl");
+                m_skyboxShader = skyboxBuilder.build();
+
+                ShaderBuilder environmentShader;
+                environmentShader.addStage(GL_VERTEX_SHADER, "shaders/env_vert.glsl");
+                environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
+                m_environmentShader = environmentShader.build();
+
+                ShaderBuilder sunShader;
+                sunShader.addStage(GL_VERTEX_SHADER, "shaders/sun_vert.glsl");
+                sunShader.addStage(GL_FRAGMENT_SHADER, "shaders/sun_frag.glsl");
+                m_sunShader = sunShader.build();
+
+                // Any new shaders can be added below in similar fashion.
+                // ==> Don't forget to reconfigure CMake when you do!
+                //     Visual Studio: PROJECT => Generate Cache for ComputerGraphics
+                //     VS Code: ctrl + shift + p => CMake: Configure => enter
+                // ....
+            }
+            catch (ShaderLoadingException e) {
+                std::cerr << e.what() << std::endl;
+            }
+
+        };
 
 
 
@@ -154,7 +168,7 @@ public:
         m_texture6.bind(GL_TEXTURE6);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
-        GLfloat cubeVertices[] = {
+        static GLfloat cubeVertices[] = {
             // positions          // normals
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
              0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -217,7 +231,7 @@ public:
 
 
 
-        std::vector<std::string> faces
+        static std::vector<std::string> faces
         {
 
             ("resources/cubemap/back.jpg"),
@@ -255,10 +269,41 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         GLuint cubeMapTexture = textureID;
+
         
+        auto startTime = std::chrono::system_clock::now();
+        double elapsedTime = 0.0;
+        auto now = std::chrono::system_clock::now();
+        double rawValue = 0.0;
+        double sunX = 0.0;
+        double sunY = 0.0;
+        int cycleduration = 30;
+        glm::vec3 sunCol = glm::vec3{ 0.9922f, 0.7216f,  0.0745f };
+        glm::quat meshOrientation;
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+
+
+
+        /////////////MAIN LOOP////////////////
+
 
         while (!m_window.shouldClose()) {
+            now = std::chrono::system_clock::now();
+            elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
+            rawValue = fmod(elapsedTime, cycleduration) / cycleduration;
+            rawValue = rawValue < 0.5 ? rawValue * 2.0 : (1.0 - rawValue) * 2.0;
+            dayFactor = 0.3 + (1.0 - 0.3) * rawValue;
+            double angle = elapsedTime / (2 * cycleduration) * 2 * std::numbers::pi; // Angle in radians
+            sunX = std::cos(angle);
+            sunY = std::sin(angle);
+            if (sunY < 0) {
+                sunX *= -1;
+                sunY *= -1;
+            }
             
+            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1,0.01f,0.002f });
+            light.replace(s, 2);
 
             // This is your game loop
             // Put your real-time logic and rendering in here
@@ -282,14 +327,44 @@ public:
             glEnable(GL_DEPTH_TEST);
 
             camera.updateInput();
-           
-            glm::quat meshOrientation = glm::angleAxis(glm::radians(45.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            float distanceFromMesh = 10.0f; // How far the camera is from the mesh
-            glm::vec3 cameraPosition = carPosition + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
-            glm::vec3 direction = glm::normalize(carPosition - cameraPosition);
+            glm::vec3 shiftPos = glm::vec3(0.0f, 0.0f, 0.0f);
+            
+            if (!anim_splines1.empty()) {
+                if (inAnimation) {
+                    if (animTimer < animDuration - 0.1f) {
+                        WorldPosition oldPos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
+                        animTimer = (animTimer + 0.1f);
+                        WorldPosition pos = getPointOnCompositeCurve(anim_splines1, 100.0f * animTimer / animDuration, animNumber);
+                        //calculate how much the car moved in the last update
+                        if(animNumber == 1)
+                    		carLocation.direction = -pos.direction;
+                        else carLocation.direction = pos.direction;
+                        shiftPos = pos.position - oldPos.position;
+                        carLocation.position += shiftPos;
+                    }
+                    else if (animNumber < anim_splines1.size()-1)
+                    {
+                        animTimer = 0.0f;
+                        animNumber++;
+                    }
+                    else{
+                        inAnimation = false;
+                        animTimer = 0.0f;
+                        animNumber = 0;
+                        std::cout << "animation finished" << std::endl;
+                    }
+                }
+            } else {
+            	std::cout << "No animation data loaded" << std::endl;
+            }
 
-            // Calculate the up vector (usually (0, 1, 0) for a top-down view)
-            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+            float distanceFromMesh = 40.0f; // How far the camera is from the mesh
+            glm::vec3 cameraPosition = carLocation.position + meshOrientation * glm::vec3(0.0f, 0.0f, -distanceFromMesh);
+            glm::vec3 direction = glm::normalize(carLocation.position - cameraPosition);
+
+            //car orientation
+            meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
+
 
             // Calculate the right vector (cross product of direction and up)
             glm::vec3 right = glm::normalize(glm::cross(up, direction));
@@ -298,21 +373,22 @@ public:
             up = glm::cross(direction, right);
 
             // Create the view matrix
-            glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carPosition, up);
+            glm::mat4 viewMatrix = glm::lookAt(cameraPosition, carLocation.position, up);
+            
             if (moving) {
                 if (forward) {
-                    move = move + 0.2f;
-                    carPosition.z += 0.2f;
-                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z + 0.2 });
-                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2 });
+                    carLocation.position.z += 1.5f;
+                    topView.changePos(glm::vec3{topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 1.5});
                 }
                 else {
-                    move = move - 0.2f;
-                    carPosition.z -= 0.2f;
-                    light_camera.changePos(glm::vec3{ light_camera.cameraPos().x, light_camera.cameraPos().y, light_camera.cameraPos().z - 0.2 });
-                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2});
+                    carLocation.position.z -= 1.5f;
+                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 1.5});
                 }
             }
+            //SET CAMERA POSITION AND DIRECTION
+            light_camera.changePos(carLocation.position + meshOrientation * glm::vec3(1.0f, 5.0f, -distanceFromMesh));
+            light_camera.changeDir(meshOrientation, false);
+            topView.changePos(topView.cameraPos() + shiftPos);
 
             glm::mat4 view = camera.viewMatrix();
 
@@ -323,12 +399,15 @@ public:
             else if (!cam1) {
                 view = light_camera.viewMatrix();
             }
-            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,0,move });
-            m_modelMatrix = translationMatrix;
+
+            //TRANSLATE CAR MODEL ACCORDING TO ANIMATION
+            glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{carLocation.position});
+            glm::mat4 rotationMatrix = glm::mat4_cast(meshOrientation);
+
+            m_modelMatrix = translationMatrix * rotationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 
-            glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
-            const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
+           
 
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
@@ -339,134 +418,56 @@ public:
             
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
-            for (Light current_light : lights) {
-                m_environmentShader.bind();
-                glBindVertexArray(0);
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
-                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
-                glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
-                glBindVertexArray(cubeVAO);
-                glActiveTexture(GL_TEXTURE0);
-                glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-                glDrawArrays(GL_TRIANGLES, 0, 36);
-                glBindVertexArray(0);
+            
+               
 
-                for (GPUMesh& mesh : m_meshes) {
-                    if (!kd && !bphong) {
-                        m_defaultShader.bind();
+            for (GPUMesh& mesh : m_meshes) {
+                if (!kd && !bphong) {
+                    m_defaultShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    if (mesh.hasTextureCoords()) {
+                        m_texture1.bind(GL_TEXTURE0);
+                        glUniform1i(3, 0);
+                        glUniform1i(4, GL_TRUE);
+                        glUniform1i(5, GL_FALSE);
+                    }
+                    else {
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, GL_TRUE);
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                    }
+                    mesh.draw(m_defaultShader);
+
+                }
+                else {
+                    if (kd) {
+                        m_kdShader.bind();
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                        if (mesh.hasTextureCoords()) {
-                            m_texture1.bind(GL_TEXTURE0);
-                            glUniform1i(3, 0);
-                            glUniform1i(4, GL_TRUE);
-                            glUniform1i(5, GL_FALSE);
-                        }
-                        else {
-                            glUniform1i(4, GL_FALSE);
-                            glUniform1i(5, GL_TRUE);
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
-                        }
-                        mesh.draw(m_defaultShader);
 
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+
+                        mesh.draw(m_kdShader);
                     }
                     else {
-                        if (kd) {
-                            m_kdShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
-                            mesh.draw(m_kdShader);
-                        }
-                        else {
-                            m_bphongShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        mesh.draw(m_bphongShader);
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
-
-                            mesh.draw(m_bphongShader);
-
-                        }
                     }
-
                 }
 
-                /* glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
-                 glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
-                 glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-                 glm::mat4 combined = glm::mat4(1);
-                 glm::mat4 translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 12,0,0 });*/
+            }
 
-                 // CAN BE USED FOR DAY/NIGHT LIGHTING MAYBE
-                 //for (int i = 0; i < 4; i++) {
-                 //    for (GPUMesh& mesh : arm) {
-                 //        tracker = (tracker + 1) % 9;
-                 //        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
-                 //        //scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
-                 //        //unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-                 //        
-                 //        //translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,i + 2,i });
-                 //        if (slower != 0) {
-                 //            combined = combined;
-                 //        }
-                 //        
-                 //        else if (i >= 1) {
-                 //            combined *= translationMatrixArm * rotationS;
-                 //        }
-                 //        else {
-                 //            combined *= translationMatrixArm;
-                 //        }
-                 //        m_modelMatrix = combined;
-                 //        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                 //        if (!kd && !bphong) {
-                 //            m_defaultShader.bind();
-                 //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //            mesh.draw(m_defaultShader);
-
-                 //        }
-                 //        else {
-                 //            if (kd) {
-                 //                m_kdShader.bind();
-                 //                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //                glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-
-                 //                mesh.draw(m_kdShader);
-                 //            }
-                 //            else {
-                 //                m_bphongShader.bind();
-                 //                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //                glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-
-                 //                mesh.draw(m_bphongShader);
-
-                 //            }
-                 //        }
-                 //    }
-
-                 //    translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,(i + 1) * 3,0 });
-                 //}
-
-
-                 //slower = (slower + 1) % 15;
-
-
-
+                
                  ///////////////////////////////////////////////////// START ROBOT ARM //////////////////////////////////////////////////////////////////////////
 
                 glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
@@ -491,7 +492,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -501,7 +502,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_bphongShader);
 
@@ -534,7 +535,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
                             }
@@ -544,7 +545,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_bphongShader);
 
@@ -553,6 +554,14 @@ public:
                     }
 
                 }
+
+                glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
+                newLightPos = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * glm::vec4(1);
+
+
+                Light l = Light(newLightPos, glm::vec3(1), light.returnLightIndex(0).returnAttenuation());
+                light.replace(l, 0);
+               
 
                 glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
                 for (GPUMesh& mesh : arm) {
@@ -576,7 +585,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -586,7 +595,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                             mesh.draw(m_bphongShader);
 
@@ -619,7 +628,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
                             }
@@ -629,7 +638,7 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                                glUniform3fv(6, 1, glm::value_ptr(current_light.position));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_bphongShader);
 
@@ -639,15 +648,21 @@ public:
 
                 }
 
+                glm::vec4 newLightPos2;
+                newLightPos2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * glm::vec4(1);
 
 
+                Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
+                light.replace(l2, 1);
+                
 
 
                 ///////////////////////////////////////////////// END ROBOT ARM ////////////////////////////////////////////////////////////////////////////////////////
 
 
-
-
+                
+                glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
+                const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
 
 
                 for (int i = 0; i < 6; i++) {
@@ -658,25 +673,45 @@ public:
                     glUniform1i(3, i + 1);
                     glUniform1i(4, GL_TRUE);
                     glUniform1i(5, GL_FALSE);
-                    glUniform3fv(6, 1, glm::value_ptr(current_light.position));
-
+                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                    glUniform1f(7, dayFactor);
                     mesh.draw(m_skyboxShader);
                 }
 
-
+                m_environmentShader.bind();
+                glBindVertexArray(0);
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
+                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+                glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
+                glUniform1f(4, dayFactor);
+                glBindVertexArray(cubeVAO);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+                glBindVertexArray(0);
 
 
                 glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
                 // Render other objects with environment mapping
 
+                glm::mat4 sunModelMatrix = glm::scale(glm::translate(glm::mat4(1.0f), light.returnLight()[2].returnPos()), glm::vec3(4.0));
+                const glm::mat4 sunMVP = m_projectionMatrix * view * sunModelMatrix;
+
+                for (GPUMesh& mesh : sun) {
+                    m_sunShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(sunMVP));
+                    mesh.draw(m_sunShader);
+                }
+                
 
 
-                terrain.renderTerrain(view, current_light.position);
+                terrain.renderTerrain(view, light.returnLight(), procedural);
 
-            }
+ 
             //////////////////////////
-
+        
             m_window.swapBuffers();
         }
      
@@ -735,6 +770,15 @@ public:
             bphong = !bphong;
             std::cout << "blinn phong is " << bphong << std::endl;
             break;
+        case GLFW_KEY_C:
+            inAnimation = !inAnimation;
+            std::cout << "playing animation: " << inAnimation << std::endl;
+            break;
+
+        case GLFW_KEY_T:
+            procedural = !procedural;
+            
+            break;
         default:
             break;
         }
@@ -758,7 +802,7 @@ public:
     // If the mouse is moved this function will be called with the x, y screen-coordinates of the mouse
     void onMouseMove(const glm::dvec2& cursorPos)
     {
-        std::cout << "Mouse at position: " << cursorPos.x << " " << cursorPos.y << std::endl;
+        //std::cout << "Mouse at position: " << cursorPos.x << " " << cursorPos.y << std::endl;
     }
 
     // If one of the mouse buttons is pressed this function will be called
@@ -790,6 +834,7 @@ private:
     Shader m_shadowShader;
     Shader m_skyboxShader;
     Shader m_environmentShader;
+    Shader m_sunShader;
 
 
     unsigned int loadCubemap(std::vector<std::string> faces);
@@ -799,6 +844,8 @@ private:
     std::vector<GPUMesh> road;
     std::vector<GPUMesh> skybox;
     std::vector<GPUMesh> arm;
+    std::vector<GPUMesh> sun;
+
     Texture m_texture1;
     Texture m_texture2;
     Texture m_texture3;
@@ -812,13 +859,21 @@ private:
     Camera temp{ &m_window};
     bool cam1{ true };
     bool top{ false };
-    glm::vec3 carPosition;
     Terrain terrain;
+  
+    float animTimer;
+    float animDuration;
+    int animNumber;
+    std::vector <BezierSpline> anim_splines1;
+    WorldPosition carLocation;
     float move;
     bool moving;
     bool forward;
     bool kd;
     bool bphong;
+    bool inAnimation;
+    bool procedural;
+    float dayFactor;
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);
     glm::mat4 m_viewMatrix = glm::lookAt(glm::vec3(-1, 1, -1), glm::vec3(0), glm::vec3(0, 1, 0));
@@ -831,13 +886,17 @@ private:
     glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
     glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
     glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-    struct Light {
+    /*struct Light {
         glm::vec3 position;
         glm::vec3 color;
+        glm::vec3 attenuation;
     };
-    std::vector<Light> lights{ Light { glm::vec3(0, 0, 3), glm::vec3(1) } };
+    std::vector<Light> lights{ Light { glm::vec3(20,5, 30), glm::vec3(1), glm::vec3{1,0.1f,0.02f} }, Light { glm::vec3(-20,5, -30), glm::vec3(1), glm::vec3{1,0.1f,0.02f} } };*/
+    Light light;
     
 };
+
+
 
 int main()
 {
@@ -851,3 +910,5 @@ unsigned int Application::loadCubemap(std::vector<std::string> faces)
 {
     return 0;
 }
+
+

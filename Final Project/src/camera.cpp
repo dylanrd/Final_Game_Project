@@ -29,6 +29,16 @@ void Camera::changePos(const glm::vec3& pos)
     m_position = pos;
 }
 
+void Camera::changeDir(const glm::quat& dir, bool vertical)
+{
+	m_forward = dir * glm::vec3(0, 0, 1);
+    if (vertical) { m_up = dir * glm::vec3(0, 1, 0); }
+    else
+    {
+    	m_up = glm::normalize(glm::vec3(-0.1f, 4.0f, -0.1f) * dir);
+    }
+}
+
 glm::vec3 Camera::cameraPos() const
 {
     return m_position;

@@ -1,4 +1,5 @@
 #include "terrain.h"
+
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 DISABLE_WARNINGS_PUSH()
@@ -12,43 +13,75 @@ DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <iostream>
 
+int texWidth, texHeight, texChannels;
+/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
+int normalWidth, normalHeight, normalChannels;
+
+
+stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
+
+stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
+
+HeightGenerator hgBase;
+
+int heightWidth, heightHeight, heightChannels;
+stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
 
 
 Terrain::Terrain(void)
-    
 {
 }
 
-void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
-	const int count = VERTEX_COUNT * VERTEX_COUNT;
-	float vertices[count * 3];
-	float normals[count * 3];
-	float textureCoords[count * 2];
-	//int indices[6 * (VERTEX_COUNT - 1) * (VERTEX_COUNT - 1)];
+	int MAX_HEIGHT = 20;
+	int MIN_HEIGHT = -5;
 
-
+	
 	int vertexPointer = 0;
 	std::vector<terrainVertex> vertices2;
 	std::vector<glm::uvec3> triangles;
 	for (int i = 0; i < VERTEX_COUNT; i++) {
 		for (int j = 0; j < VERTEX_COUNT; j++) {
-			vertices[vertexPointer * 3] = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
-			vertices[vertexPointer * 3 + 1] = 0;
-			vertices[vertexPointer * 3 + 2] = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
+			float vert1 = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
+			float vert2;
+			if (procedural) {
+				//hG.changeSeed();
+				if (!hGcreated) {
+					hgBase.changeSeed();
+					hGcreated = true;
+					
+				}
+				
+					vert2 = hgBase.generateHeight(i, j);
+				
+				
+			}
+			else {
+				vert2 = 0;
+				hGcreated = false;
+			}
 			
-			normals[vertexPointer * 3] = 0;
-			normals[vertexPointer * 3 + 1] = 1;
-			normals[vertexPointer * 3 + 2] = 0;
-			textureCoords[vertexPointer * 2] = (float) j / ((float)VERTEX_COUNT - 1);
-			textureCoords[vertexPointer * 2 + 1] = (float) i / ((float)VERTEX_COUNT - 1);
+			//std::cout << vert1 << std::endl;
+			if ((float)SIZE / 2.f - 20.f < vert1 ) {
+				if ((float)SIZE / 2.f + 20.f > vert1) {
+					vert2 = 0;
+					
+				}
+			}
+
+			float vert3 = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
+			
+			
+			float text1 = (float) j / ((float)VERTEX_COUNT - 1);
+			float text2 = (float) i / ((float)VERTEX_COUNT - 1);
 			vertexPointer++;
 
 			terrainVertex vertex{
-						.position = {vertices[vertexPointer * 3], vertices[vertexPointer * 3 + 1], vertices[vertexPointer * 3 + 2]},
-						.normal = {normals[vertexPointer * 3], normals[vertexPointer * 3 + 1], normals[vertexPointer * 3 + 2]},
-						.texCoord = {textureCoords[vertexPointer * 2], textureCoords[vertexPointer * 2 + 1]}
+						.position = {vert1,vert2,vert3},
+						.normal = {0, 1, 0},
+						.texCoord = {text1, text2}
 			};
 
 			vertices2.push_back(vertex);
@@ -64,13 +97,9 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 			int topRight = topLeft + 1;
 			int bottomLeft = ((gz + 1) * VERTEX_COUNT) + gx;
 			int bottomRight = bottomLeft + 1;
-			/*indices[pointer++] = topLeft;
-			indices[pointer++] = bottomLeft;
-			indices[pointer++] = topRight;*/
+			
 			triangles.push_back(glm::uvec3{topLeft, bottomLeft, topRight});
-			/*indices[pointer++] = topRight;
-			indices[pointer++] = bottomLeft;
-			indices[pointer++] = bottomRight;*/
+			
 			triangles.push_back(glm::uvec3{ topRight, bottomLeft, bottomRight });
 		}
 	}
@@ -113,13 +142,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 		vertices2[i].tangent = glm::normalize(vertices2[i].tangent);
 	}
 
-	int texWidth, texHeight, texChannels;
-	/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
-	int normalWidth, normalHeight, normalChannels;
 
-	stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
-
-	stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
 
 	GLuint texLight;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texLight);
@@ -172,8 +195,7 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
 	glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-	glUniform3fv(6, 1, glm::value_ptr(cameraPosition));
-	
+		
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texLight);
 	glUniform1i(3, 0);
@@ -181,7 +203,24 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, normalMap);
 	glUniform1i(4, 1);
-		
+
+
+	glm::vec3 positions[2];
+	
+	for (int i = 0; i < 2; i++) {
+		positions[i] = lights[i].returnPos();
+	}
+	
+	glUniform3fv(7, 2, glm::value_ptr(positions[0]));
+
+	glm::vec3 attenuation[2];
+
+	for (int i = 0; i < 2; i++) {
+		attenuation[i] = lights[i].returnAttenuation();
+	}
+
+	glUniform3fv(11, 2, glm::value_ptr(attenuation[0]));
+
 	GLuint VAO, VBO, IBO;
 	
 	glCreateBuffers(1, &IBO);
@@ -221,6 +260,14 @@ void Terrain::renderTerrain(glm::mat4 view, glm::vec3 cameraPosition) {
 	glBindVertexArray(VAO);
 	//glDrawArrays(GL_TRIANGLES, 0, vertices2.size() / 3);
 	glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, nullptr);
+
+	glDeleteTextures(1, &texLight);
+	glDeleteTextures(1, &normalMap);
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &IBO);
+	glDeleteFramebuffers(1, &framebuffer);
+	glDeleteFramebuffers(1, &framebuffer2);
 }
 
 

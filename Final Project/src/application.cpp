@@ -656,11 +656,17 @@ public:
                 mesh.draw(m_sunShader);
             }
                 
+          
 
+            terrain.renderTerrain(view, light.returnLight(), procedural, terrainLevel);
 
-            terrain.renderTerrain(view, light.returnLight(), procedural);
+            if (terrainLevel * 800 + 400 < carLocation.position.z) {
+                terrainLevel++;
+            }
 
- 
+            if (terrainLevel * 800 - 400 > carLocation.position.z) {
+                terrainLevel--;
+            }
             //////////////////////////
         
             m_window.swapBuffers();
@@ -822,7 +828,7 @@ private:
     bool cam1{ true };
     bool top{ false };
     Terrain terrain;
-  
+    Terrain terrain2;
     float animTimer;
     float animDuration;
     int animNumber;
@@ -845,7 +851,7 @@ private:
     int arr[9] = {8, 10, 12, 15, 20 ,15,12,10,8 };
     int tracker = 0;
     int slower = 0;
-
+    int terrainLevel = 0;
     glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
     glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
     glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));

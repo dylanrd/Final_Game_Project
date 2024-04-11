@@ -13,6 +13,8 @@ DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <iostream>
 
+
+bool hGcreated = false;
 int texWidth, texHeight, texChannels;
 /*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
 int normalWidth, normalHeight, normalChannels;
@@ -24,15 +26,14 @@ stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth,
 
 HeightGenerator hgBase;
 
-int heightWidth, heightHeight, heightChannels;
-stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
 
 
 Terrain::Terrain(void)
 {
+	
 }
 
-void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural, int car) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
 	int MAX_HEIGHT = 20;
@@ -184,7 +185,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	terrainShader.addStage(GL_FRAGMENT_SHADER, "shaders/shader_terrain_frag.glsl");
 	
 
-	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5,-SIZE/4 });
+	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5, car * SIZE + -SIZE/2 });
 	m_modelMatrix = translationMatrix;
 	const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 	// Normals should be transformed differently than positions (ignoring translations + dealing with scaling):

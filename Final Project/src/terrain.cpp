@@ -205,21 +205,21 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glUniform1i(4, 1);
 
 
-	glm::vec3 positions[2];
+	glm::vec3 positions[3];
 	
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 3; i++) {
 		positions[i] = lights[i].returnPos();
 	}
 	
-	glUniform3fv(7, 2, glm::value_ptr(positions[0]));
+	glUniform3fv(7,3, glm::value_ptr(positions[0]));
 
-	glm::vec3 attenuation[2];
+	glm::vec3 attenuation[3];
 
-	for (int i = 0; i < 2; i++) {
+	for (int i = 0; i < 3; i++) {
 		attenuation[i] = lights[i].returnAttenuation();
 	}
 
-	glUniform3fv(11, 2, glm::value_ptr(attenuation[0]));
+	glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
 	GLuint VAO, VBO, IBO;
 	

@@ -13,11 +13,22 @@ DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <iostream>
 
+int texWidth, texHeight, texChannels;
+/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
+int normalWidth, normalHeight, normalChannels;
 
+
+stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
+
+stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
+
+HeightGenerator hgBase;
+
+int heightWidth, heightHeight, heightChannels;
+stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
 
 
 Terrain::Terrain(void)
-    
 {
 }
 
@@ -27,10 +38,6 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	int MAX_HEIGHT = 20;
 	int MIN_HEIGHT = -5;
 
-
-	int heightWidth, heightHeight, heightChannels;
-	stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
-	
 	
 	int vertexPointer = 0;
 	std::vector<terrainVertex> vertices2;
@@ -135,16 +142,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 		vertices2[i].tangent = glm::normalize(vertices2[i].tangent);
 	}
 
-	int texWidth, texHeight, texChannels;
-	/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
-	int normalWidth, normalHeight, normalChannels;
 
-
-	stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
-
-	stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
-
-	
 
 	GLuint texLight;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texLight);
@@ -262,6 +260,14 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glBindVertexArray(VAO);
 	//glDrawArrays(GL_TRIANGLES, 0, vertices2.size() / 3);
 	glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, nullptr);
+
+	glDeleteTextures(1, &texLight);
+	glDeleteTextures(1, &normalMap);
+	glDeleteVertexArrays(1, &VAO);
+	glDeleteBuffers(1, &VBO);
+	glDeleteBuffers(1, &IBO);
+	glDeleteFramebuffers(1, &framebuffer);
+	glDeleteFramebuffers(1, &framebuffer2);
 }
 
 

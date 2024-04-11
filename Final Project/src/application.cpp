@@ -168,7 +168,7 @@ public:
         m_texture6.bind(GL_TEXTURE6);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
-        GLfloat cubeVertices[] = {
+        static GLfloat cubeVertices[] = {
             // positions          // normals
             -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
              0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
@@ -231,7 +231,7 @@ public:
 
 
 
-        std::vector<std::string> faces
+        static std::vector<std::string> faces
         {
 
             ("resources/cubemap/back.jpg"),
@@ -279,6 +279,15 @@ public:
         double sunY = 0.0;
         int cycleduration = 30;
         glm::vec3 sunCol = glm::vec3{ 0.9922f, 0.7216f,  0.0745f };
+        glm::quat meshOrientation;
+        glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+
+
+
+
+        /////////////MAIN LOOP////////////////
+
+
         while (!m_window.shouldClose()) {
             now = std::chrono::system_clock::now();
             elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
@@ -319,7 +328,7 @@ public:
 
             camera.updateInput();
             glm::vec3 shiftPos = glm::vec3(0.0f, 0.0f, 0.0f);
-            glm::quat meshOrientation;
+            
             if (!anim_splines1.empty()) {
                 if (inAnimation) {
                     if (animTimer < animDuration - 0.1f) {
@@ -357,9 +366,6 @@ public:
             meshOrientation = getCarOrientation(carLocation.direction, glm::vec3(0.0f, 1.0f, 0.0f));
 
 
-            // Calculate the up vector (usually (0, 1, 0) for a top-down view)
-            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-
             // Calculate the right vector (cross product of direction and up)
             glm::vec3 right = glm::normalize(glm::cross(up, direction));
 
@@ -371,12 +377,12 @@ public:
             
             if (moving) {
                 if (forward) {
-                    carLocation.position.z += 0.2f;
-                    topView.changePos(glm::vec3{topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 0.2});
+                    carLocation.position.z += 1.5f;
+                    topView.changePos(glm::vec3{topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 1.5});
                 }
                 else {
-                    carLocation.position.z -= 0.2f;
-                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 0.2 });
+                    carLocation.position.z -= 1.5f;
+                    topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 1.5});
                 }
             }
             //SET CAMERA POSITION AND DIRECTION
@@ -415,121 +421,53 @@ public:
             
                
 
-                for (GPUMesh& mesh : m_meshes) {
-                    if (!kd && !bphong) {
-                        m_defaultShader.bind();
+            for (GPUMesh& mesh : m_meshes) {
+                if (!kd && !bphong) {
+                    m_defaultShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    if (mesh.hasTextureCoords()) {
+                        m_texture1.bind(GL_TEXTURE0);
+                        glUniform1i(3, 0);
+                        glUniform1i(4, GL_TRUE);
+                        glUniform1i(5, GL_FALSE);
+                    }
+                    else {
+                        glUniform1i(4, GL_FALSE);
+                        glUniform1i(5, GL_TRUE);
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                    }
+                    mesh.draw(m_defaultShader);
+
+                }
+                else {
+                    if (kd) {
+                        m_kdShader.bind();
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                        if (mesh.hasTextureCoords()) {
-                            m_texture1.bind(GL_TEXTURE0);
-                            glUniform1i(3, 0);
-                            glUniform1i(4, GL_TRUE);
-                            glUniform1i(5, GL_FALSE);
-                        }
-                        else {
-                            glUniform1i(4, GL_FALSE);
-                            glUniform1i(5, GL_TRUE);
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-                        }
-                        mesh.draw(m_defaultShader);
 
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+
+                        mesh.draw(m_kdShader);
                     }
                     else {
-                        if (kd) {
-                            m_kdShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
-                            mesh.draw(m_kdShader);
-                        }
-                        else {
-                            m_bphongShader.bind();
-                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        mesh.draw(m_bphongShader);
 
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
-                            mesh.draw(m_bphongShader);
-
-                        }
                     }
-
                 }
 
-                /* glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
-                 glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
-                 glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-                 glm::mat4 combined = glm::mat4(1);
-                 glm::mat4 translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 12,0,0 });*/
+            }
 
-                 // CAN BE USED FOR DAY/NIGHT LIGHTING MAYBE
-                 //for (int i = 0; i < 4; i++) {
-                 //    for (GPUMesh& mesh : arm) {
-                 //        tracker = (tracker + 1) % 9;
-                 //        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
-                 //        //scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
-                 //        //unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));
-                 //        
-                 //        //translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,i + 2,i });
-                 //        if (slower != 0) {
-                 //            combined = combined;
-                 //        }
-                 //        
-                 //        else if (i >= 1) {
-                 //            combined *= translationMatrixArm * rotationS;
-                 //        }
-                 //        else {
-                 //            combined *= translationMatrixArm;
-                 //        }
-                 //        m_modelMatrix = combined;
-                 //        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                 //        if (!kd && !bphong) {
-                 //            m_defaultShader.bind();
-                 //            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //            mesh.draw(m_defaultShader);
-
-                 //        }
-                 //        else {
-                 //            if (kd) {
-                 //                m_kdShader.bind();
-                 //                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //                glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-
-                 //                mesh.draw(m_kdShader);
-                 //            }
-                 //            else {
-                 //                m_bphongShader.bind();
-                 //                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                 //                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                 //                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                 //                glUniform3fv(6, 1, glm::value_ptr(camera.cameraPos()));
-
-                 //                mesh.draw(m_bphongShader);
-
-                 //            }
-                 //        }
-                 //    }
-
-                 //    translationMatrixArm = glm::translate(glm::mat4(1.0f), glm::vec3{ 0,(i + 1) * 3,0 });
-                 //}
-
-
-                 //slower = (slower + 1) % 15;
-
-
-
+                
                  ///////////////////////////////////////////////////// START ROBOT ARM //////////////////////////////////////////////////////////////////////////
 
                 glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
@@ -716,13 +654,13 @@ public:
 
                 Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
                 light.replace(l2, 1);
-
+                
 
 
                 ///////////////////////////////////////////////// END ROBOT ARM ////////////////////////////////////////////////////////////////////////////////////////
 
 
-
+                
                 glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
                 const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
 
@@ -766,13 +704,14 @@ public:
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(sunMVP));
                     mesh.draw(m_sunShader);
                 }
+                
 
 
                 terrain.renderTerrain(view, light.returnLight(), procedural);
 
  
             //////////////////////////
-
+        
             m_window.swapBuffers();
         }
      

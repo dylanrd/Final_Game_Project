@@ -38,7 +38,7 @@ void main()
         
         vec3 lightDir = normalize(lightPos[i] - fragPosition);
         float diff = max(dot(normal, lightDir), 0.0);
-        accDiff = accDiff + (diff * kd)/attenuationFactor;
+        accDiff += (diff * kd)/attenuationFactor;
 
         vec3 viewDir = normalize(lightPos[i] - fragPosition);
         vec3 halfwayDir = normalize(lightDir + viewDir);  
@@ -46,13 +46,13 @@ void main()
 
         if (diff > 0.0) {
             float spec = pow(max(dot(normal, halfwayDir), 0.0), shininess);
-            accSpec = accSpec + (spec * ks)/attenuationFactor;
+            accSpec += (spec * ks)/ attenuationFactor;
         }
-        accCol += (kd * dot(normal, normalize(lightPos[i] - fragPosition)) / attenuationFactor);
+  
+        
         //accCol = accCol + (kd * dot(norm, normalize(lightPos[i] - fragPosition)))/ attenuationFactor;
     }
-
-    vec3 result = (ambient + accDiff + accSpec) * accCol;
+    vec3 result = ( accDiff + accSpec) ;
 
     vec3 transparentColor = vec3(1.0, 1.0, 1.0); // Assuming white is fully transparent
     vec3 finalColor = mix(transparentColor, result, transparency);

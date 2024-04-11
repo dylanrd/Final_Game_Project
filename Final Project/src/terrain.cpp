@@ -21,9 +21,16 @@ Terrain::Terrain(void)
 {
 }
 
-void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
+	int MAX_HEIGHT = 20;
+	int MIN_HEIGHT = -5;
+
+
+	int heightWidth, heightHeight, heightChannels;
+	stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
+	
 	
 	int vertexPointer = 0;
 	std::vector<terrainVertex> vertices2;
@@ -31,7 +38,24 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
 	for (int i = 0; i < VERTEX_COUNT; i++) {
 		for (int j = 0; j < VERTEX_COUNT; j++) {
 			float vert1 = (float)j / ((float)VERTEX_COUNT - 1) * SIZE;
-			float vert2 = 0;
+			float vert2;
+			if (procedural) {
+				//hG.changeSeed();
+				if (!hGcreated) {
+					hgBase.changeSeed();
+					hGcreated = true;
+					
+				}
+				
+					vert2 = hgBase.generateHeight(i, j);
+				
+				
+			}
+			else {
+				vert2 = 0;
+				hGcreated = false;
+			}
+			
 			float vert3 = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
 			
 			
@@ -107,9 +131,12 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights) {
 	/*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
 	int normalWidth, normalHeight, normalChannels;
 
+
 	stbi_uc* pixels = stbi_load("resources/Gravel_001_BaseColor.jpg", &texWidth, &texHeight, &texChannels, 3);
 
 	stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth, &normalHeight, &normalChannels, 3);
+
+	
 
 	GLuint texLight;
 	glCreateTextures(GL_TEXTURE_2D, 1, &texLight);

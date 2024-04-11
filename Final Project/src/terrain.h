@@ -1,6 +1,7 @@
 // Suppress warnings in third-party code.
 #include <framework/disable_all_warnings.h>
 #include "light.h"
+#include "heightGenerator.h"
 DISABLE_WARNINGS_PUSH()
 #include <glm/mat4x4.hpp>
 #include <glm/vec2.hpp>
@@ -26,7 +27,7 @@ struct terrainVertex {
 class Terrain {
 public:
 	Terrain(void);
-    void renderTerrain(glm::mat4 view, std::vector<Light> lights);
+    void renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural);
 	void terrainTexture();
 
 private:
@@ -35,5 +36,6 @@ private:
 	glm::mat4 m_modelMatrix{ 1.0f };
 
 private:
-    
+	HeightGenerator hgBase;
+	bool hGcreated = false;
 };

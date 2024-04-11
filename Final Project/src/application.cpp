@@ -77,6 +77,8 @@ public:
             kd = false;
             bphong = false;
 
+
+            procedural = false;
             light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
             light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
             
@@ -695,7 +697,7 @@ public:
 
 
                 Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
-                light.replace(l, 1);
+                light.replace(l2, 1);
 
 
 
@@ -739,7 +741,7 @@ public:
 
 
 
-                terrain.renderTerrain(view, light.returnLight());
+                terrain.renderTerrain(view, light.returnLight(), procedural);
 
  
             //////////////////////////
@@ -805,6 +807,11 @@ public:
         case GLFW_KEY_C:
             inAnimation = !inAnimation;
             std::cout << "playing animation: " << inAnimation << std::endl;
+            break;
+
+        case GLFW_KEY_T:
+            procedural = !procedural;
+            
             break;
         default:
             break;
@@ -896,7 +903,7 @@ private:
     bool kd;
     bool bphong;
     bool inAnimation;
-
+    bool procedural;
     float dayFactor;
     // Projection and view matrices for you to fill in and use
     glm::mat4 m_projectionMatrix = glm::perspective(glm::radians(80.0f), 1.0f, 1.1f, 500.f);

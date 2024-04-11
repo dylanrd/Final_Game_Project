@@ -302,7 +302,7 @@ public:
                 sunY *= -1;
             }
             
-            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1 });
+            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1, 0, 0});
             light.replace(s, 2);
 
             glm::vec3 positions[3];

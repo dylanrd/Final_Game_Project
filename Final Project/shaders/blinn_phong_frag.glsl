@@ -52,7 +52,7 @@ void main()
         
         //accCol = accCol + (kd * dot(norm, normalize(lightPos[i] - fragPosition)))/ attenuationFactor;
     }
-    vec3 result = ( accDiff + accSpec) ;
+    vec3 result = (accDiff + accSpec) ;
 
     vec3 transparentColor = vec3(1.0, 1.0, 1.0); // Assuming white is fully transparent
     vec3 finalColor = mix(transparentColor, result, transparency);

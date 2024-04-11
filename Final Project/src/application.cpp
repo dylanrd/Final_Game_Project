@@ -59,7 +59,7 @@ public:
             anim_splines1 = loadSplinesFromJSON("resources/animations/BezierCurve1_data.json");
             std::cout << "loaded splines: " << !anim_splines1.empty() << std::endl;
             animTimer = 0.0f;
-            animDuration = 10.0f;
+            animDuration = 50.0f;
             inAnimation = false;
             animNumber = 0;
             dayFactor = 1;
@@ -74,6 +74,7 @@ public:
             top = false;
             moving = false;
             forward = false;
+            centerSkybox = false;
 
             kd = false;
             bphong = false;
@@ -660,8 +661,11 @@ public:
                 ///////////////////////////////////////////////// END ROBOT ARM ////////////////////////////////////////////////////////////////////////////////////////
 
 
-                
+                //center skybox on camera or car
                 glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
+                if (centerSkybox) {
+				    skyModelMatrix = glm::translate(glm::mat4(1.0f), carLocation.position);
+                }
                 const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
 
 
@@ -731,6 +735,7 @@ public:
                 camera = temp;*/
                 cam1 = true;
                 top = false;
+                centerSkybox = false;
             }
 
             break;
@@ -741,16 +746,17 @@ public:
                 camera = temp;*/
                 cam1 = false;
                 top = false;
+                centerSkybox = true;
             }
             break;
 
-        case GLFW_KEY_3:
-            
+        case GLFW_KEY_3:    
                 /*temp = light_camera;
                 light_camera = camera;
                 camera = temp;*/
                 cam1 = false;
                 top = true;
+                centerSkybox = true;
 
             break;
 
@@ -872,6 +878,7 @@ private:
     bool kd;
     bool bphong;
     bool inAnimation;
+    bool centerSkybox;
     bool procedural;
     float dayFactor;
     // Projection and view matrices for you to fill in and use

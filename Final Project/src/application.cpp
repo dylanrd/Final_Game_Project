@@ -37,12 +37,21 @@ class Application {
 public:
     Application()
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
-        , m_texture1("resources/skybox/bottom.jpg"), 
+        , m_texture1("resources/skybox/bottom.jpg"),
         m_texture2("resources/skybox/front.jpg"),
         m_texture3("resources/skybox/back.jpg"),
         m_texture4("resources/skybox/top.jpg"),
         m_texture5("resources/skybox/left.jpg"),
-            m_texture6("resources/skybox/right.jpg")
+        m_texture6("resources/skybox/right.jpg"),
+        m_billboard0("resources/animations/billBoard/0.png"),
+        m_billboard1("resources/animations/billBoard/1.png"),
+        m_billboard2("resources/animations/billBoard/2.png"),
+        m_billboard3("resources/animations/billBoard/3.png"),
+        m_billboard4("resources/animations/billBoard/4.png"),
+        m_billboard5("resources/animations/billBoard/5.png"),
+        m_billboard6("resources/animations/billBoard/6.png"),
+        m_billboard7("resources/animations/billBoard/7.png")
+
         {
             carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
             glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -106,6 +115,7 @@ public:
             skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
             arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
             sun = GPUMesh::loadMeshGPU("resources/sun.obj");
+            billboard = GPUMesh::loadMeshGPU("resources/billboard.obj");
 
             try {
                 ShaderBuilder defaultBuilder;
@@ -167,6 +177,15 @@ public:
         m_texture4.bind(GL_TEXTURE4);
         m_texture5.bind(GL_TEXTURE5);
         m_texture6.bind(GL_TEXTURE6);
+
+        m_billboard0.bind(GL_TEXTURE10);
+        m_billboard1.bind(GL_TEXTURE11);
+        m_billboard2.bind(GL_TEXTURE12);
+        m_billboard3.bind(GL_TEXTURE13);
+        m_billboard4.bind(GL_TEXTURE14);
+        m_billboard5.bind(GL_TEXTURE15);
+        m_billboard6.bind(GL_TEXTURE16);
+        m_billboard7.bind(GL_TEXTURE17);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         static GLfloat cubeVertices[] = {
@@ -229,7 +248,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-
+        
 
 
         static std::vector<std::string> faces
@@ -284,6 +303,8 @@ public:
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 
+
+        int billboardTexture = 10;
 
 
         /////////////MAIN LOOP////////////////
@@ -443,6 +464,42 @@ public:
 
                 mesh.draw(m_bphongShader);
 
+            }
+
+            ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
+
+            glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -20, -2.5, 50 }), glm::vec3(2));
+            glm::mat4 boardRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+            glm::mat4 boardModelMatrix = billBoardTranslationMatrix * boardRotationMatrix;
+            
+            const glm::mat4 billBoardMVP = m_projectionMatrix * view * boardModelMatrix;
+
+            for (GPUMesh& mesh : billboard) {
+                if (mesh.hasTextureCoords()) {
+                    if (billboardTexture == 18) billboardTexture = 10;
+
+                    m_defaultShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    glUniform1i(3, billboardTexture);
+                    glUniform1i(4, GL_TRUE);
+                    glUniform1i(5, GL_FALSE);
+                    mesh.draw(m_defaultShader);
+
+                    billboardTexture++;
+                }
+                else {
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                    mesh.draw(m_bphongShader);
+                }
             }
                 
 
@@ -741,6 +798,7 @@ private:
     std::vector<GPUMesh> skybox;
     std::vector<GPUMesh> arm;
     std::vector<GPUMesh> sun;
+    std::vector<GPUMesh> billboard;
 
     Texture m_texture1;
     Texture m_texture2;
@@ -748,6 +806,14 @@ private:
     Texture m_texture4;
     Texture m_texture5;
     Texture m_texture6;
+    Texture m_billboard0;
+    Texture m_billboard1;
+    Texture m_billboard2;
+    Texture m_billboard3;
+    Texture m_billboard4;
+    Texture m_billboard5;
+    Texture m_billboard6;
+    Texture m_billboard7;
     bool m_useMaterial { true };
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera topView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };

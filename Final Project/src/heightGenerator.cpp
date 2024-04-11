@@ -20,7 +20,7 @@ void HeightGenerator::changeSeed() {
 }
 
 float HeightGenerator::generateHeight(int x, int z) {
-	return interpolateNoise(x/8, z/8) * 20.f + interpolateNoise(x / 2, z / 2) * 5.f;
+	return interpolateNoise(x/8, z/8) * 40.f + interpolateNoise(x / 2, z / 2) * 10.f;
 }
 
 float HeightGenerator::generateSmoothHeight(int x, int z) {

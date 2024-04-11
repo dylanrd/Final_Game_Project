@@ -56,6 +56,14 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 				hGcreated = false;
 			}
 			
+			//std::cout << vert1 << std::endl;
+			if ((float)SIZE / 2.f - 20.f < vert1 ) {
+				if ((float)SIZE / 2.f + 20.f > vert1) {
+					vert2 = 0;
+					
+				}
+			}
+
 			float vert3 = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
 			
 			

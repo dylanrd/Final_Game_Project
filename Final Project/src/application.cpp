@@ -28,6 +28,7 @@ DISABLE_WARNINGS_POP()
 #include <vector>
 #include <span>
 #include <chrono>
+#include <numbers>
 
 
 
@@ -81,7 +82,7 @@ public:
             procedural = false;
             light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
             light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
-            
+            light.addLight(glm::vec3(0, 200, 0), glm::vec3{ 0.9922f, 0.7216f,  0.0745f }, glm::vec3{ 1,0.01f,0.002f });
             
             //terrain = Terrain();
             //transform = Transformation();
@@ -103,6 +104,7 @@ public:
             road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
             skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
             arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
+            sun = GPUMesh::loadMeshGPU("resources/sun.obj");
 
             try {
                 ShaderBuilder defaultBuilder;
@@ -134,6 +136,10 @@ public:
                 environmentShader.addStage(GL_FRAGMENT_SHADER, "shaders/env_frag.glsl");
                 m_environmentShader = environmentShader.build();
 
+                ShaderBuilder sunShader;
+                sunShader.addStage(GL_VERTEX_SHADER, "shaders/sun_vert.glsl");
+                sunShader.addStage(GL_FRAGMENT_SHADER, "shaders/sun_frag.glsl");
+                m_sunShader = sunShader.build();
 
                 // Any new shaders can be added below in similar fashion.
                 // ==> Don't forget to reconfigure CMake when you do!
@@ -269,13 +275,26 @@ public:
         double elapsedTime = 0.0;
         auto now = std::chrono::system_clock::now();
         double rawValue = 0.0;
+        double sunX = 0.0;
+        double sunY = 0.0;
+        int cycleduration = 30;
+        glm::vec3 sunCol = glm::vec3{ 0.9922f, 0.7216f,  0.0745f };
         while (!m_window.shouldClose()) {
             now = std::chrono::system_clock::now();
             elapsedTime = std::chrono::duration_cast<std::chrono::seconds>(now - startTime).count();
-            rawValue = fmod(elapsedTime, 30) / 30;
+            rawValue = fmod(elapsedTime, cycleduration) / cycleduration;
             rawValue = rawValue < 0.5 ? rawValue * 2.0 : (1.0 - rawValue) * 2.0;
             dayFactor = 0.3 + (1.0 - 0.3) * rawValue;
-
+            double angle = elapsedTime / (2 * cycleduration) * 2 * std::numbers::pi; // Angle in radians
+            sunX = std::cos(angle);
+            sunY = std::sin(angle);
+            if (sunY < 0) {
+                sunX *= -1;
+                sunY *= -1;
+            }
+            
+            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1,0.01f,0.002f });
+            light.replace(s, 2);
 
             // This is your game loop
             // Put your real-time logic and rendering in here
@@ -382,8 +401,7 @@ public:
             m_modelMatrix = translationMatrix * rotationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 
-            glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
-            const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
+           
 
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
@@ -424,7 +442,7 @@ public:
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
 
                             mesh.draw(m_kdShader);
                         }
@@ -705,7 +723,8 @@ public:
 
 
 
-
+                glm::mat4 skyModelMatrix = glm::translate(glm::mat4(1.0f), camera.cameraPos());
+                const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
 
 
                 for (int i = 0; i < 6; i++) {
@@ -739,6 +758,14 @@ public:
 
                 // Render other objects with environment mapping
 
+                glm::mat4 sunModelMatrix = glm::scale(glm::translate(glm::mat4(1.0f), light.returnLight()[2].returnPos()), glm::vec3(4.0));
+                const glm::mat4 sunMVP = m_projectionMatrix * view * sunModelMatrix;
+
+                for (GPUMesh& mesh : sun) {
+                    m_sunShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(sunMVP));
+                    mesh.draw(m_sunShader);
+                }
 
 
                 terrain.renderTerrain(view, light.returnLight(), procedural);
@@ -868,6 +895,7 @@ private:
     Shader m_shadowShader;
     Shader m_skyboxShader;
     Shader m_environmentShader;
+    Shader m_sunShader;
 
 
     unsigned int loadCubemap(std::vector<std::string> faces);
@@ -877,6 +905,8 @@ private:
     std::vector<GPUMesh> road;
     std::vector<GPUMesh> skybox;
     std::vector<GPUMesh> arm;
+    std::vector<GPUMesh> sun;
+
     Texture m_texture1;
     Texture m_texture2;
     Texture m_texture3;

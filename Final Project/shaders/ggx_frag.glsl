@@ -64,7 +64,7 @@ void main() {
     float denominator = max(4.0 * NdotV * max(dot(normal, L), 0.0), 0.001);
     vec3 specular = nominator / denominator;
 
-    float attenuation = 1.0f; //lightIntensity / (length(lightPos - fragPos) * length(lightPos - fragPos));
+    float attenuation = clamp(lightIntensity / length(lightPos - fragPos), 0.1f, 1.0f);
     vec3 radiance = lightColor * attenuation;
 
     // Correct diffuse component

@@ -102,7 +102,7 @@ public:
                     onMouseReleased(button, mods);
                 });
 
-            m_meshes = GPUMesh::loadMeshGPU("resources/carTexturesTest.obj");
+            m_meshes = GPUMesh::loadMeshGPU("resources/carPBR.obj");
             road = GPUMesh::loadMeshGPU("resources/temp_road.obj");
             skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
             arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
@@ -322,6 +322,10 @@ public:
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 
+        for (GPUMesh& mesh : m_meshes) {
+            std::cout << mesh.hasTextureCoords() << std::endl;
+		}
+
         //PBR TEXTURES
         GLuint albedoTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Color.png");
         GLuint normalTexture = loadTexture("resources/pbr/Foil002_1K-PNG_NormalGL.png");
@@ -506,28 +510,28 @@ public:
 
                         glActiveTexture(GL_TEXTURE20);
                         glBindTexture(GL_TEXTURE_2D, albedoTexture);
-                        glUniform1i(3, 20);
+                        glUniform1i(4, 20);
 
                         glActiveTexture(GL_TEXTURE21);
                         glBindTexture(GL_TEXTURE_2D, normalTexture);
-                        glUniform1i(4, 21);
+                        glUniform1i(5, 21);
 
                         glActiveTexture(GL_TEXTURE22);
                         glBindTexture(GL_TEXTURE_2D, metallicTexture);
-                        glUniform1i(5, 22);
+                        glUniform1i(6, 22);
 
                         glActiveTexture(GL_TEXTURE23);
                         glBindTexture(GL_TEXTURE_2D, roughnessTexture);
-                        glUniform1i(6, 23);
+                        glUniform1i(7, 23);
 
                         glActiveTexture(GL_TEXTURE24);
                         glBindTexture(GL_TEXTURE_2D, aoTexture);
-                        glUniform1i(7, 24);
+                        glUniform1i(8, 24);
 
-                        glUniform3fv(8, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-                        glUniform3fv(9, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f}));
-                        glUniform1f(10, 255);
-                        glUniform3fv(11, 1, glm::value_ptr(camera.cameraPos()));
+                        glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f}));
+                        glUniform1f(11, 255);
+                        glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
                         mesh.draw(m_pbrShader);
                     }
                     else{

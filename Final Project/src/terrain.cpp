@@ -13,8 +13,6 @@ DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <iostream>
 
-
-bool hGcreated = false;
 int texWidth, texHeight, texChannels;
 /*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
 int normalWidth, normalHeight, normalChannels;
@@ -26,14 +24,15 @@ stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth,
 
 HeightGenerator hgBase;
 
+int heightWidth, heightHeight, heightChannels;
+stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
 
 
 Terrain::Terrain(void)
 {
-	
 }
 
-void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural, int car) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
 	int MAX_HEIGHT = 20;
@@ -185,7 +184,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	terrainShader.addStage(GL_FRAGMENT_SHADER, "shaders/shader_terrain_frag.glsl");
 	
 
-	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5, car * SIZE + -SIZE/2 });
+	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5,-SIZE/4 });
 	m_modelMatrix = translationMatrix;
 	const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 	// Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
@@ -206,21 +205,21 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glUniform1i(4, 1);
 
 
-	glm::vec3 positions[3];
+	glm::vec3 positions[2];
 	
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 2; i++) {
 		positions[i] = lights[i].returnPos();
 	}
 	
-	glUniform3fv(7,3, glm::value_ptr(positions[0]));
+	glUniform3fv(7, 2, glm::value_ptr(positions[0]));
 
-	glm::vec3 attenuation[3];
+	glm::vec3 attenuation[2];
 
-	for (int i = 0; i < 3; i++) {
+	for (int i = 0; i < 2; i++) {
 		attenuation[i] = lights[i].returnAttenuation();
 	}
 
-	glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+	glUniform3fv(11, 2, glm::value_ptr(attenuation[0]));
 
 	GLuint VAO, VBO, IBO;
 	

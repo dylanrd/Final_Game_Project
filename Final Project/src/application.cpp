@@ -37,21 +37,12 @@ class Application {
 public:
     Application()
         : m_window("Final Project", glm::ivec2(1024, 1024), OpenGLVersion::GL45)
-        , m_texture1("resources/skybox/bottom.jpg"),
+        , m_texture1("resources/skybox/bottom.jpg"), 
         m_texture2("resources/skybox/front.jpg"),
         m_texture3("resources/skybox/back.jpg"),
         m_texture4("resources/skybox/top.jpg"),
         m_texture5("resources/skybox/left.jpg"),
-        m_texture6("resources/skybox/right.jpg"),
-        m_billboard0("resources/animations/billBoard/0.png"),
-        m_billboard1("resources/animations/billBoard/1.png"),
-        m_billboard2("resources/animations/billBoard/2.png"),
-        m_billboard3("resources/animations/billBoard/3.png"),
-        m_billboard4("resources/animations/billBoard/4.png"),
-        m_billboard5("resources/animations/billBoard/5.png"),
-        m_billboard6("resources/animations/billBoard/6.png"),
-        m_billboard7("resources/animations/billBoard/7.png")
-
+            m_texture6("resources/skybox/right.jpg")
         {
             carLocation = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f) };
             glm::quat meshOrientation = glm::angleAxis(glm::radians(0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
@@ -93,7 +84,7 @@ public:
             procedural = false;
             light.addLight(glm::vec3(20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
             light.addLight(glm::vec3(-20, 1, 30), glm::vec3(1), glm::vec3{ 1,0.01f,0.002f });
-            light.addLight(glm::vec3(0, 200, 0), glm::vec3{ 0.9922f, 0.7216f,  0.0745f }, glm::vec3{ 1,0.01f,0.002f });
+            light.addLight(glm::vec3(0, 200, 0), glm::vec3{ 0.9922f, 0.7216f,  0.0745f }, glm::vec3{ 1,0,0 });
             
             //terrain = Terrain();
             //transform = Transformation();
@@ -116,7 +107,6 @@ public:
             skybox = GPUMesh::loadMeshGPU("resources/skybox.obj");
             arm = GPUMesh::loadMeshGPU("resources/cyliner.obj");
             sun = GPUMesh::loadMeshGPU("resources/sun.obj");
-            billboard = GPUMesh::loadMeshGPU("resources/billboard.obj");
 
             try {
                 ShaderBuilder defaultBuilder;
@@ -216,15 +206,6 @@ public:
         m_texture4.bind(GL_TEXTURE4);
         m_texture5.bind(GL_TEXTURE5);
         m_texture6.bind(GL_TEXTURE6);
-
-        m_billboard0.bind(GL_TEXTURE10);
-        m_billboard1.bind(GL_TEXTURE11);
-        m_billboard2.bind(GL_TEXTURE12);
-        m_billboard3.bind(GL_TEXTURE13);
-        m_billboard4.bind(GL_TEXTURE14);
-        m_billboard5.bind(GL_TEXTURE15);
-        m_billboard6.bind(GL_TEXTURE16);
-        m_billboard7.bind(GL_TEXTURE17);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         static GLfloat cubeVertices[] = {
@@ -287,7 +268,7 @@ public:
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
 
-        
+
 
 
         static std::vector<std::string> faces
@@ -351,8 +332,6 @@ public:
         GLuint aoTexture = loadTexture("resources/pbr/Foil002_1K-PNG_AmbientOcclusion.png");
         //GLuint displacementTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Displacement.png");
 
-        int billboardTexture = 10;
-
 
         /////////////MAIN LOOP////////////////
 
@@ -371,17 +350,9 @@ public:
                 sunY *= -1;
             }
             
-            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1, 0, 0});
+            Light s = Light(glm::vec3(sunX*150, sunY*150, 0), sunCol, glm::vec3{ 1,0.01f,0.002f });
             light.replace(s, 2);
 
-            glm::vec3 positions[3];
-            glm::vec3 attenuation[3];
-            for (int i = 0; i < 3; i++) {
-                positions[i] = light.returnLight()[i].returnPos();
-            }
-            for (int i = 0; i < 3; i++) {
-                attenuation[i] = light.returnLight()[i].returnAttenuation();
-            }
             // This is your game loop
             // Put your real-time logic and rendering in here
             m_window.updateInput();
@@ -496,6 +467,7 @@ public:
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
             
+               
 
             for (GPUMesh& mesh : m_meshes) {
                 if (!kd && !bphong && !pbr) {
@@ -516,15 +488,16 @@ public:
                     }
                     mesh.draw(m_defaultShader);
 
-                m_bphongShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                }
+                else {
+                    if (kd) {
+                        m_kdShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
 
-                glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
                         mesh.draw(m_kdShader);
                     }
                     else if (pbr) {
@@ -565,87 +538,124 @@ public:
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                mesh.draw(m_bphongShader);
+                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+
+                        mesh.draw(m_bphongShader);
+
+                    }
+                }
 
             }
-
-            ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
-
-            glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -20, -2.5, 50 }), glm::vec3(2));
-            glm::mat4 boardRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::mat4 boardModelMatrix = billBoardTranslationMatrix * boardRotationMatrix;
-            
-            const glm::mat4 billBoardMVP = m_projectionMatrix * view * boardModelMatrix;
-
-            for (GPUMesh& mesh : billboard) {
-                if (mesh.hasTextureCoords()) {
-                    if (billboardTexture == 18) billboardTexture = 10;
-
-                    m_defaultShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                    glUniform1i(3, billboardTexture);
-                    glUniform1i(4, GL_TRUE);
-                    glUniform1i(5, GL_FALSE);
-                    mesh.draw(m_defaultShader);
-
-                    billboardTexture++;
-                }
-                else {
-                    m_bphongShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
-
-                    mesh.draw(m_bphongShader);
-                }
-            }
-                
 
                 
                  ///////////////////////////////////////////////////// START ROBOT ARM //////////////////////////////////////////////////////////////////////////
 
-            glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
-            for (GPUMesh& mesh : arm) {
-
-
-                m_modelMatrix = translationMatrixArm1;
-                const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                    
-                m_bphongShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
-
-                mesh.draw(m_bphongShader);
-
-                        
-            }
-
-
-            for (int i = 0; i < 3; i++) {
+                glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
                 for (GPUMesh& mesh : arm) {
-                    tracker = (tracker + 1) % 9;
-                    rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
 
-                    translationMatrixArm1 = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * rotationS;
+
                     m_modelMatrix = translationMatrixArm1;
                     const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                        
-                    m_bphongShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    if (!kd && !bphong) {
+                        m_defaultShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+                        mesh.draw(m_defaultShader);
+
+                    }
+                    else {
+                        if (kd) {
+                            m_kdShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+
+                            mesh.draw(m_kdShader);
+                        }
+                        else {
+                            m_bphongShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                            glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+
+                            mesh.draw(m_bphongShader);
+
+                        }
+                    }
+                }
+
+
+                for (int i = 0; i < 3; i++) {
+                    for (GPUMesh& mesh : arm) {
+                        tracker = (tracker + 1) % 9;
+                        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
+
+                        translationMatrixArm1 = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * rotationS;
+                        m_modelMatrix = translationMatrixArm1;
+                        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+                        if (!kd && !bphong) {
+                            m_defaultShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                            mesh.draw(m_defaultShader);
+
+                        }
+                        else {
+                            if (kd) {
+                                m_kdShader.bind();
+                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+
+                                mesh.draw(m_kdShader);
+                            }
+                            else {
+                                m_bphongShader.bind();
+                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+
+                                mesh.draw(m_bphongShader);
+
+                            }
+                        }
+                    }
+
+                }
+
+                glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
+                newLightPos = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * glm::vec4(1);
+
+
+                Light l = Light(newLightPos, glm::vec3(1), light.returnLightIndex(0).returnAttenuation());
+                light.replace(l, 0);
+               
+
+                glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
+                for (GPUMesh& mesh : arm) {
+
+
+                    m_modelMatrix = translationMatrixArm2;
+                    const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+                    if (!kd && !bphong) {
+                        m_defaultShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        mesh.draw(m_defaultShader);
 
                     }
                     else {
@@ -673,28 +683,32 @@ public:
                     }
                 }
 
-            }
 
-            glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
-            newLightPos = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * glm::vec4(1);
+                for (int i = 0; i < 3; i++) {
+                    for (GPUMesh& mesh : arm) {
+                        tracker = (tracker + 1) % 9;
+                        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(-float(arr[tracker])), glm::vec3(0, 0, 1));
 
+                        translationMatrixArm2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * rotationS;
+                        m_modelMatrix = translationMatrixArm2;
+                        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+                        if (!kd && !bphong) {
+                            m_defaultShader.bind();
+                            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                            glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-            Light l = Light(newLightPos, glm::vec3(1), light.returnLightIndex(0).returnAttenuation());
-            light.replace(l, 0);
-               
+                            mesh.draw(m_defaultShader);
 
-            glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
-            for (GPUMesh& mesh : arm) {
-                m_modelMatrix = translationMatrixArm2;
-                const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                    
-                m_bphongShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        }
+                        else {
+                            if (kd) {
+                                m_kdShader.bind();
+                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
                             }
@@ -713,39 +727,26 @@ public:
                                 glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                                 glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
-            for (int i = 0; i < 3; i++) {
-                for (GPUMesh& mesh : arm) {
-                    tracker = (tracker + 1) % 9;
-                    rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(-float(arr[tracker])), glm::vec3(0, 0, 1));
+                                mesh.draw(m_bphongShader);
 
-                    translationMatrixArm2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * rotationS;
-                    m_modelMatrix = translationMatrixArm2;
-                    const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
-                        
-                    m_bphongShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                            }
+                        }
+                    }
 
-                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
-
-                    mesh.draw(m_bphongShader);
                 }
 
-            }
-
-            glm::vec4 newLightPos2;
-            newLightPos2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * glm::vec4(1);
+                glm::vec4 newLightPos2;
+                newLightPos2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * glm::vec4(1);
 
 
-            Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
-            light.replace(l2, 1);
+                Light l2 = Light(newLightPos2, glm::vec3(1), light.returnLightIndex(1).returnAttenuation());
+                light.replace(l2, 1);
                 
 
 
-            ///////////////////////////////////////////////// END ROBOT ARM ////////////////////////////////////////////////////////////////////////////////////////
+                ///////////////////////////////////////////////// END ROBOT ARM ////////////////////////////////////////////////////////////////////////////////////////
 
 
                 //center skybox on camera or car
@@ -756,55 +757,51 @@ public:
                 const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
 
 
-            for (int i = 0; i < 6; i++) {
-                GPUMesh& mesh = skybox[i];
-                m_skyboxShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
-                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
-                glUniform1i(3, i + 1);
-                   
-                glUniform1f(7, dayFactor);
-                mesh.draw(m_skyboxShader);
-            }
+                for (int i = 0; i < 6; i++) {
+                    GPUMesh& mesh = skybox[i];
+                    m_skyboxShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
+                    glUniform1i(3, i + 1);
+                    glUniform1i(4, GL_TRUE);
+                    glUniform1i(5, GL_FALSE);
+                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                    glUniform1f(7, dayFactor);
+                    mesh.draw(m_skyboxShader);
+                }
 
-            m_environmentShader.bind();
-            glBindVertexArray(0);
-            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
-            glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
-            glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
-            glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
-            glUniform1f(4, dayFactor);
-            glBindVertexArray(cubeVAO);
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-            glBindVertexArray(0);
+                m_environmentShader.bind();
+                glBindVertexArray(0);
+                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(glm::mat4(1.0f)));
+                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(view));
+                glUniformMatrix4fv(2, 1, GL_FALSE, glm::value_ptr(m_projectionMatrix));
+                glUniform3fv(3, 1, glm::value_ptr(camera.cameraPos()));
+                glUniform1f(4, dayFactor);
+                glBindVertexArray(cubeVAO);
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTexture);
+                glDrawArrays(GL_TRIANGLES, 0, 36);
+                glBindVertexArray(0);
 
 
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+                glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-            // Render other objects with environment mapping
+                // Render other objects with environment mapping
 
-            glm::mat4 sunModelMatrix = glm::scale(glm::translate(glm::mat4(1.0f), light.returnLight()[2].returnPos()), glm::vec3(4.0));
-            const glm::mat4 sunMVP = m_projectionMatrix * view * sunModelMatrix;
+                glm::mat4 sunModelMatrix = glm::scale(glm::translate(glm::mat4(1.0f), light.returnLight()[2].returnPos()), glm::vec3(4.0));
+                const glm::mat4 sunMVP = m_projectionMatrix * view * sunModelMatrix;
 
-            for (GPUMesh& mesh : sun) {
-                m_sunShader.bind();
-                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(sunMVP));
-                mesh.draw(m_sunShader);
-            }
+                for (GPUMesh& mesh : sun) {
+                    m_sunShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(sunMVP));
+                    mesh.draw(m_sunShader);
+                }
                 
-          
 
-            terrain.renderTerrain(view, light.returnLight(), procedural, terrainLevel);
 
-            if (terrainLevel * 800 + 400 < carLocation.position.z) {
-                terrainLevel++;
-            }
+                terrain.renderTerrain(view, light.returnLight(), procedural);
 
-            if (terrainLevel * 800 - 400 > carLocation.position.z) {
-                terrainLevel--;
-            }
+ 
             //////////////////////////
         
             m_window.swapBuffers();
@@ -953,7 +950,6 @@ private:
     std::vector<GPUMesh> skybox;
     std::vector<GPUMesh> arm;
     std::vector<GPUMesh> sun;
-    std::vector<GPUMesh> billboard;
 
     Texture m_texture1;
     Texture m_texture2;
@@ -961,14 +957,6 @@ private:
     Texture m_texture4;
     Texture m_texture5;
     Texture m_texture6;
-    Texture m_billboard0;
-    Texture m_billboard1;
-    Texture m_billboard2;
-    Texture m_billboard3;
-    Texture m_billboard4;
-    Texture m_billboard5;
-    Texture m_billboard6;
-    Texture m_billboard7;
     bool m_useMaterial { true };
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera topView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
@@ -977,7 +965,7 @@ private:
     bool cam1{ true };
     bool top{ false };
     Terrain terrain;
-    Terrain terrain2;
+  
     float animTimer;
     float animDuration;
     int animNumber;
@@ -1001,7 +989,7 @@ private:
     int arr[9] = {8, 10, 12, 15, 20 ,15,12,10,8 };
     int tracker = 0;
     int slower = 0;
-    int terrainLevel = 0;
+
     glm::mat4 rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(10.f), glm::vec3(0, 0, 1));
     glm::mat4 scale1 = glm::scale(glm::mat4(1.0f), glm::vec3(2, 1, 1));
     glm::mat4 unscale = glm::scale(glm::mat4(1.0f), glm::vec3(1, 1, 1));

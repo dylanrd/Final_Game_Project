@@ -75,7 +75,10 @@ public:
             Camera camera1{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
             Camera camera2{ &m_window, cameraPosition, direction };
             Camera camera3{ &m_window, cameraPositionTop, directionTop };
+            Camera camera4{ &m_window, carLocation.position + meshOrientationTop * glm::vec3(0.0f, 0.0f, -distanceFromMesh ) , directionTop };
+
             topView = camera3;
+            miniMap = camera4;
             light_camera = camera2;
             camera = camera1;
             temp = { &m_window };
@@ -151,6 +154,11 @@ public:
                 sunShader.addStage(GL_VERTEX_SHADER, "shaders/sun_vert.glsl");
                 sunShader.addStage(GL_FRAGMENT_SHADER, "shaders/sun_frag.glsl");
                 m_sunShader = sunShader.build();
+
+                ShaderBuilder mmShader;
+                mmShader.addStage(GL_VERTEX_SHADER, "shaders/mm_vert.glsl");
+                mmShader.addStage(GL_FRAGMENT_SHADER, "shaders/mm_frag.glsl");
+                m_minimapShader = mmShader.build();
 
                 // Any new shaders can be added below in similar fashion.
                 // ==> Don't forget to reconfigure CMake when you do!
@@ -307,6 +315,53 @@ public:
         int billboardTexture = 10;
 
 
+        unsigned int quadVAO, quadVBO;
+        float quadVertices[] = {
+            // Positions       // Texture coordinates
+            -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+            -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+             1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+
+            -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+             1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+             1.0f,  1.0f, 0.0f,  1.0f, 1.0f
+        };
+
+        // Create VAO and VBO
+        glGenVertexArrays(1, &quadVAO);
+        glGenBuffers(1, &quadVBO);
+
+        glBindVertexArray(quadVAO);
+
+        glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), quadVertices, GL_STATIC_DRAW);
+
+        // Set vertex attributes
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+        // Unbind VAO and VBO
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindVertexArray(0);
+
+        GLuint minimapFramebuffer;
+        glGenFramebuffers(1, &minimapFramebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, minimapFramebuffer);
+
+        GLuint minimapTexture;
+        glGenTextures(1, &minimapTexture);
+        glBindTexture(GL_TEXTURE_2D, minimapTexture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 1024, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, minimapTexture, 0);
+        
+
+        
+
+
         /////////////MAIN LOOP////////////////
 
 
@@ -409,10 +464,12 @@ public:
                 if (forward) {
                     carLocation.position.z += 1.5f;
                     topView.changePos(glm::vec3{topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 1.5});
+                    miniMap.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z + 1.5 });
                 }
                 else {
                     carLocation.position.z -= 1.5f;
                     topView.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 1.5});
+                    miniMap.changePos(glm::vec3{ topView.cameraPos().x, topView.cameraPos().y, topView.cameraPos().z - 1.5 });
                 }
             }
             //SET CAMERA POSITION AND DIRECTION
@@ -437,18 +494,189 @@ public:
             m_modelMatrix = translationMatrix * rotationMatrix;
             const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 
-           
 
             // Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
             // https://paroj.github.io/gltut/Illumination/Tut09%20Normal%20Transformation.html
             const glm::mat3 normalModelMatrix = glm::inverseTranspose(glm::mat3(m_modelMatrix));
 
-            
-            
-            
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
-            
+
+
+
+            GLint origViewport[4];
+            glGetIntegerv(GL_VIEWPORT, origViewport);
+
+            view = miniMap.viewMatrix();
+            glBindFramebuffer(GL_FRAMEBUFFER, minimapFramebuffer);
+            glViewport(0, 0, 1024, 1024); // Set viewport to match texture size
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            const glm::mat4 miniMVP = m_projectionMatrix * view * m_modelMatrix;
+
+            {
+                for (GPUMesh& mesh : m_meshes) {
+
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(miniMVP));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+
+
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                    mesh.draw(m_bphongShader);
+
+                }
+
+                ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
+
+                glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -14    , -2.5, 50 }), glm::vec3(2));
+                glm::mat4 boardRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+                glm::mat4 boardModelMatrix = billBoardTranslationMatrix * boardRotationMatrix;
+
+                const glm::mat4 billBoardMVP = m_projectionMatrix * view * boardModelMatrix;
+
+                for (GPUMesh& mesh : billboard) {
+                    if (mesh.hasTextureCoords()) {
+                        if (billboardTexture == 18) billboardTexture = 10;
+
+                        m_defaultShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                        glUniform1i(3, billboardTexture);
+                        glUniform1i(4, GL_TRUE);
+                        glUniform1i(5, GL_FALSE);
+                        mesh.draw(m_defaultShader);
+
+                        billboardTexture++;
+                    }
+                    else {
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                        mesh.draw(m_bphongShader);
+                    }
+                }
+
+
+
+                ///////////////////////////////////////////////////// START ROBOT ARM //////////////////////////////////////////////////////////////////////////
+
+                glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
+                for (GPUMesh& mesh : arm) {
+
+
+                    m_modelMatrix = translationMatrixArm1;
+                    const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                    mesh.draw(m_bphongShader);
+
+
+                }
+
+
+                for (int i = 0; i < 3; i++) {
+                    for (GPUMesh& mesh : arm) {
+                        tracker = (tracker + 1) % 9;
+                        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(float(arr[tracker])), glm::vec3(0, 0, 1));
+
+                        translationMatrixArm1 = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * rotationS;
+                        m_modelMatrix = translationMatrixArm1;
+                        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                        mesh.draw(m_bphongShader);
+
+
+                    }
+
+                }
+
+                glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
+                newLightPos = translationMatrixArm1 * glm::translate(glm::mat4(1.0f), glm::vec3{ -0.5,4.5,0 }) * glm::vec4(1);
+
+
+                Light l = Light(newLightPos, glm::vec3(1), light.returnLightIndex(0).returnAttenuation());
+                light.replace(l, 0);
+
+
+                glm::mat4 translationMatrixArm2 = glm::translate(glm::mat4(1.0f), glm::vec3{ -15,0,0 });
+                for (GPUMesh& mesh : arm) {
+                    m_modelMatrix = translationMatrixArm2;
+                    const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                    mesh.draw(m_bphongShader);
+                }
+
+
+                for (int i = 0; i < 3; i++) {
+                    for (GPUMesh& mesh : arm) {
+                        tracker = (tracker + 1) % 9;
+                        rotationS = glm::rotate(glm::mat4(1.0f), glm::radians(-float(arr[tracker])), glm::vec3(0, 0, 1));
+
+                        translationMatrixArm2 = translationMatrixArm2 * glm::translate(glm::mat4(1.0f), glm::vec3{ 0.5,4.5,0 }) * rotationS;
+                        m_modelMatrix = translationMatrixArm2;
+                        const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
+
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                        mesh.draw(m_bphongShader);
+                    }
+
+                }
+
+
+                //terrain.renderTerrain(view, light.returnLight(), procedural, terrainLevel);
+            }
+            glViewport(origViewport[0], origViewport[1], (GLsizei)origViewport[2], (GLsizei)origViewport[3]);
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            view = camera.viewMatrix();
+
+            if (top) {
+
+                view = topView.viewMatrix();
+            }
+            else if (!cam1) {
+                view = light_camera.viewMatrix();
+            }
+           
 
             for (GPUMesh& mesh : m_meshes) {
 
@@ -468,7 +696,7 @@ public:
 
             ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
 
-            glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -20, -2.5, 50 }), glm::vec3(2));
+            glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -14    , -2.5, 50 }), glm::vec3(2));
             glm::mat4 boardRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
             glm::mat4 boardModelMatrix = billBoardTranslationMatrix * boardRotationMatrix;
             
@@ -656,6 +884,28 @@ public:
                 mesh.draw(m_sunShader);
             }
                 
+
+
+
+           
+
+            ///////////////////////////////////////////////// MiniMap ////////////////////////////////////////////////////////////////////////////////////////
+            
+
+            
+            glm::mat4 mmview = glm::mat4(1.0f); // Identity matrix for view
+            glm::mat4 mmmodel = glm::scale(glm::translate(glm::mat4(1.0f),  glm::vec3(0.7,0.7,-1.1)), glm::vec3(0.2f)); 
+
+            glm::mat4 mmmvpMatrix = m_projectionMatrix * mmview * mmmodel;
+
+
+            m_minimapShader.bind();
+            glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mmmvpMatrix));
+
+            glBindVertexArray(quadVAO);
+            glBindTexture(GL_TEXTURE_2D, minimapTexture);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+            glBindVertexArray(0);
           
 
             terrain.renderTerrain(view, light.returnLight(), procedural, terrainLevel);
@@ -794,6 +1044,7 @@ private:
     Shader m_skyboxShader;
     Shader m_environmentShader;
     Shader m_sunShader;
+    Shader m_minimapShader;
 
 
     unsigned int loadCubemap(std::vector<std::string> faces);
@@ -824,6 +1075,7 @@ private:
     Camera camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera topView{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera light_camera{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
+    Camera miniMap{ &m_window, glm::vec3(1.2f, 1.1f, 0.9f), -glm::vec3(1.2f, 1.1f, 0.9f) };
     Camera temp{ &m_window};
     bool cam1{ true };
     bool top{ false };

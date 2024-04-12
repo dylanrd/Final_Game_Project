@@ -600,70 +600,65 @@ public:
 
                         billboardTexture++;
                     }
-                    else {
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, GL_TRUE);
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-                    }
-                    mesh.draw(m_defaultShader);
+                    
+            else {
+                if (kd) {
+                    m_kdShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
+                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+
+                    mesh.draw(m_kdShader);
+                }
+                else if (pbr) {
+                    m_pbrShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+
+                    glActiveTexture(GL_TEXTURE20);
+                    glBindTexture(GL_TEXTURE_2D, albedoTexture);
+                    glUniform1i(4, 20);
+
+                    glActiveTexture(GL_TEXTURE21);
+                    glBindTexture(GL_TEXTURE_2D, normalTexture);
+                    glUniform1i(5, 21);
+
+                    glActiveTexture(GL_TEXTURE22);
+                    glBindTexture(GL_TEXTURE_2D, metallicTexture);
+                    glUniform1i(6, 22);
+
+                    glActiveTexture(GL_TEXTURE23);
+                    glBindTexture(GL_TEXTURE_2D, roughnessTexture);
+                    glUniform1i(7, 23);
+
+                    glActiveTexture(GL_TEXTURE24);
+                    glBindTexture(GL_TEXTURE_2D, aoTexture);
+                    glUniform1i(8, 24);
+
+                    glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                    glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0f, 1.0f, 1.0f }));
+                    glUniform1f(11, 1000.0f);
+                    glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
+                    mesh.draw(m_pbrShader);
                 }
                 else {
-                    if (kd) {
-                        m_kdShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+                    m_bphongShader.bind();
+                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
-                        mesh.draw(m_kdShader);
-                    }
-                    else if (pbr) {
-                        m_pbrShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-
-                        glActiveTexture(GL_TEXTURE20);
-                        glBindTexture(GL_TEXTURE_2D, albedoTexture);
-                        glUniform1i(4, 20);
-
-                        glActiveTexture(GL_TEXTURE21);
-                        glBindTexture(GL_TEXTURE_2D, normalTexture);
-                        glUniform1i(5, 21);
-
-                        glActiveTexture(GL_TEXTURE22);
-                        glBindTexture(GL_TEXTURE_2D, metallicTexture);
-                        glUniform1i(6, 22);
-
-                        glActiveTexture(GL_TEXTURE23);
-                        glBindTexture(GL_TEXTURE_2D, roughnessTexture);
-                        glUniform1i(7, 23);
-
-                        glActiveTexture(GL_TEXTURE24);
-                        glBindTexture(GL_TEXTURE_2D, aoTexture);
-                        glUniform1i(8, 24);
-
-                        glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f}));
-                        glUniform1f(11, 1000.0f);
-                        glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
-                        mesh.draw(m_pbrShader);
-                    }
-                    else{
-                        m_bphongShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
-
-                        mesh.draw(m_bphongShader);
-                    }
+                    mesh.draw(m_bphongShader);
                 }
+            }
+                }
+                
 
 
 

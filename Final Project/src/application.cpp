@@ -476,6 +476,7 @@ public:
             light_camera.changePos(carLocation.position + meshOrientation * glm::vec3(1.0f, 5.0f, -distanceFromMesh));
             light_camera.changeDir(meshOrientation, false);
             topView.changePos(topView.cameraPos() + shiftPos);
+            miniMap.changePos(miniMap.cameraPos() + shiftPos);
 
             glm::mat4 view = camera.viewMatrix();
 

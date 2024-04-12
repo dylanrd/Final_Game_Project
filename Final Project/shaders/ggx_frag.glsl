@@ -1,9 +1,9 @@
 #version 450 core
 
 // Inputs from vertex shader
-in vec3 fragPos;
+in vec3 fragPosition;
 in vec3 fragNormal;
-in vec2 TexCoords;
+in vec2 fragTexCoord;
 in mat3 TBN;
 
 // Textures
@@ -35,10 +35,10 @@ vec3 fresnelSchlick(float cosTheta, vec3 F0);
 
 void main() {
     // Extract data from maps
-    vec3 albedo = texture(albedoMap, TexCoords).rgb;
-    float metallic = texture(metallicMap, TexCoords).r;
-    float roughness = texture(roughnessMap, TexCoords).r;
-    float ao = texture(aoMap, TexCoords).r;
+    vec3 albedo = texture(albedoMap, fragTexCoord).rgb;
+    float metallic = texture(metallicMap, fragTexCoord).r;
+    float roughness = texture(roughnessMap, fragTexCoord).r;
+    float ao = texture(aoMap, fragTexCoord).r;
 
     // Get normals from map and blend with vertex normals
     vec3 texNormal = getNormalFromMap();
@@ -49,8 +49,8 @@ void main() {
         normal = -normal;  // Invert the normal if it's flipped
     }
 
-    vec3 V = normalize(camPos - fragPos);
-    vec3 L = normalize(lightPos - fragPos);
+    vec3 V = normalize(camPos - fragPosition);
+    vec3 L = normalize(lightPos - fragPosition);
     vec3 H = normalize(V + L);
 
     vec3 F0 = mix(vec3(0.04), albedo, metallic);
@@ -64,7 +64,7 @@ void main() {
     float denominator = max(4.0 * NdotV * max(dot(normal, L), 0.0), 0.001);
     vec3 specular = nominator / denominator;
 
-    float attenuation = clamp(lightIntensity / (length(lightPos - fragPos) * length(lightPos - fragPos)),0.1f, 1.0f);
+    float attenuation = clamp(lightIntensity / (length(lightPos - fragPosition) * length(lightPos - fragPosition)),0.1f, 1.0f);
     vec3 radiance = lightColor * attenuation;
 
     // Correct diffuse component
@@ -79,7 +79,7 @@ void main() {
 
 // Functions
 vec3 getNormalFromMap() {
-    vec3 normal = texture(normalMap, TexCoords).rgb;
+    vec3 normal = texture(normalMap, fragTexCoord).rgb;
     normal = normalize(normal * 2.0 - 1.0);  // Unpack the normal
     return normalize(TBN * normal);
 }

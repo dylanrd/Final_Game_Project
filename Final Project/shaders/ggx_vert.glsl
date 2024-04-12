@@ -15,14 +15,21 @@ layout(location = 3) in vec3 tangent;
 out vec3 fragPosition;
 out vec3 fragNormal;
 out vec2 fragTexCoord;
-out vec3 fragTangent;
+out mat3 TBN;
 
 void main()
 {
     gl_Position = mvpMatrix * vec4(position, 1);
     
     fragPosition = (modelMatrix * vec4(position, 1)).xyz;
-    fragNormal = normalModelMatrix * normal;
-    fragTexCoord = texCoord * 75.f;
-    fragTangent = (modelMatrix * vec4(tangent, 1)).xyz;
+
+    fragTexCoord = texCoord;
+    // Calculate the Normal, Tangent, and Bitangent vectors
+    vec3 N = normalize(normalModelMatrix * normal);
+    vec3 T = normalize(vec3(modelMatrix * vec4(tangent, 0.0)));
+    vec3 B = cross(N, T) * sign(tangent.z);  // Calculate Bitangent, includes correction for handedness
+
+    // Construct the TBN matrix
+    TBN = mat3(T, B, N);
+
 }

@@ -7,19 +7,19 @@ in vec2 TexCoords;
 in mat3 TBN;
 
 // Textures
-layout(location = 3) uniform sampler2D albedoMap;
-layout(location = 4) uniform sampler2D normalMap;
-layout(location = 5) uniform sampler2D metallicMap;
-layout(location = 6) uniform sampler2D roughnessMap;
-layout(location = 7) uniform sampler2D aoMap;
+layout(location = 4) uniform sampler2D albedoMap;
+layout(location = 5) uniform sampler2D normalMap;
+layout(location = 6) uniform sampler2D metallicMap;
+layout(location = 7) uniform sampler2D roughnessMap;
+layout(location = 8) uniform sampler2D aoMap;
 
 // Light properties
-layout(location = 8) uniform vec3 lightPos;
-layout(location = 9) uniform vec3 lightColor;
-layout(location = 10) uniform float lightIntensity;
+layout(location = 9) uniform vec3 lightPos;
+layout(location = 10) uniform vec3 lightColor;
+layout(location = 11) uniform float lightIntensity;
 
 // Camera properties
-layout(location = 11) uniform vec3 camPos;
+layout(location = 12) uniform vec3 camPos;
 
 // Output color
 out vec4 color;
@@ -64,13 +64,15 @@ void main() {
     float denominator = max(4.0 * NdotV * max(dot(normal, L), 0.0), 0.001);
     vec3 specular = nominator / denominator;
 
-    float attenuation = clamp(lightIntensity / length(lightPos - fragPos), 0.1f, 1.0f);
+    float attenuation = clamp(lightIntensity / (length(lightPos - fragPos) * length(lightPos - fragPos)),0.1f, 1.0f);
     vec3 radiance = lightColor * attenuation;
 
     // Correct diffuse component
     vec3 diffuse = (1.0 - max(dot(F, vec3(0.04)), 0.0)) * albedo * max(dot(normal, L), 0.0) * radiance;
     vec3 ambient = ao * albedo * vec3(0.03);
 
+    //vec3 n1 = texture(normalMap, TexCoords).rgb;
+    //color = vec4(n1, 1.0);
     color = vec4(diffuse + specular + ambient, 1.0);
 }
 

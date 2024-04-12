@@ -198,12 +198,12 @@ public:
         int dummyInteger = 0; // Initialized to 0
         
             
-        m_texture1.bind(GL_TEXTURE1);
-        m_texture2.bind(GL_TEXTURE2);
-        m_texture3.bind(GL_TEXTURE3);
-        m_texture4.bind(GL_TEXTURE4);
-        m_texture5.bind(GL_TEXTURE5);
-        m_texture6.bind(GL_TEXTURE6);
+        m_texture1.bind(GL_TEXTURE3);
+        m_texture2.bind(GL_TEXTURE4);
+        m_texture3.bind(GL_TEXTURE5);
+        m_texture4.bind(GL_TEXTURE6);
+        m_texture5.bind(GL_TEXTURE7);
+        m_texture6.bind(GL_TEXTURE8);
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         static GLfloat cubeVertices[] = {
@@ -478,7 +478,6 @@ public:
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                     glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
                     if (mesh.hasTextureCoords()) {
-                        m_texture1.bind(GL_TEXTURE0);
                         glUniform1i(3, 0);
                         glUniform1i(4, GL_TRUE);
                         glUniform1i(5, GL_FALSE);
@@ -765,7 +764,9 @@ public:
                     m_skyboxShader.bind();
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
-                    glUniform1i(3, i + 1);
+                    
+                    glUniform1i(3, i + 3);
+                    
                     glUniform1i(4, GL_TRUE);
                     glUniform1i(5, GL_FALSE);
                     glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
@@ -802,7 +803,7 @@ public:
                 
 
 
-                terrain.renderTerrain(view, light.returnLight(), procedural);
+                //terrain.renderTerrain(view, light.returnLight(), procedural);
 
  
             //////////////////////////

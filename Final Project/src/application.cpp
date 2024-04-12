@@ -198,12 +198,7 @@ public:
         int dummyInteger = 0; // Initialized to 0
         
             
-        m_texture1.bind(GL_TEXTURE3);
-        m_texture2.bind(GL_TEXTURE4);
-        m_texture3.bind(GL_TEXTURE5);
-        m_texture4.bind(GL_TEXTURE6);
-        m_texture5.bind(GL_TEXTURE7);
-        m_texture6.bind(GL_TEXTURE8);
+        
         //terrain.renderTerrain(thirdPersonView.viewMatrix(), camera.cameraPos());
 
         static GLfloat cubeVertices[] = {
@@ -757,6 +752,12 @@ public:
 				    skyModelMatrix = glm::translate(glm::mat4(1.0f), carLocation.position);
                 }
                 const glm::mat4 mvpMatrixSky = m_projectionMatrix * view * skyModelMatrix;
+                m_texture1.bind(GL_TEXTURE1);
+                m_texture2.bind(GL_TEXTURE2);
+                m_texture3.bind(GL_TEXTURE3);
+                m_texture4.bind(GL_TEXTURE4);
+                m_texture5.bind(GL_TEXTURE5);
+                m_texture6.bind(GL_TEXTURE6);
 
 
                 for (int i = 0; i < 6; i++) {
@@ -765,7 +766,7 @@ public:
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrixSky));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(skyModelMatrix));
                     
-                    glUniform1i(3, i + 3);
+                    glUniform1i(3, i + 1);
                     
                    
                     glUniform1f(7, dayFactor);

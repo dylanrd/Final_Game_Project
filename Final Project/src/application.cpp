@@ -78,6 +78,7 @@ public:
 
             kd = false;
             bphong = false;
+            pbr = false;
 
 
             procedural = false;
@@ -115,13 +116,10 @@ public:
 
 
                 m_bphongShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/blinn_phong_frag.glsl").build();
-
                 ShaderBuilder kdShaderBuilder;
                 kdShaderBuilder.addStage(GL_VERTEX_SHADER, "shaders/vertex.glsl");
                 kdShaderBuilder.addStage(GL_FRAGMENT_SHADER, "shaders/lambertKd_frag.glsl");
                 m_kdShader = kdShaderBuilder.build();
-
-
 
                 ShaderBuilder shadowBuilder;
                 shadowBuilder.addStage(GL_VERTEX_SHADER, "shaders/shadow_vert.glsl");
@@ -142,6 +140,7 @@ public:
                 sunShader.addStage(GL_FRAGMENT_SHADER, "shaders/sun_frag.glsl");
                 m_sunShader = sunShader.build();
 
+                m_pbrShader = ShaderBuilder().addStage(GL_VERTEX_SHADER, "shaders/ggx_vert.glsl").addStage(GL_FRAGMENT_SHADER, "shaders/ggx_frag.glsl").build();
                 // Any new shaders can be added below in similar fashion.
                 // ==> Don't forget to reconfigure CMake when you do!
                 //     Visual Studio: PROJECT => Generate Cache for ComputerGraphics
@@ -153,6 +152,46 @@ public:
             }
 
         };
+
+
+        GLuint loadTexture(const char* filepath) {
+            // Load image data
+            int width, height, numChannels;
+            unsigned char* data = stbi_load(filepath, &width, &height, &numChannels, 10);
+            if (!data) {
+                std::cerr << "Failed to load texture: " << filepath << std::endl;
+                return 0;
+            }
+
+            // Determine the image format
+            GLenum format;
+            if (numChannels == 1)
+                format = GL_RED;
+            else if (numChannels == 3)
+                format = GL_RGB;
+            else if (numChannels == 4)
+                format = GL_RGBA;
+
+            // Generate and bind texture
+            GLuint texID;
+            glGenTextures(1, &texID);
+            glBindTexture(GL_TEXTURE_2D, texID);
+
+            // Set texture parameters
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+            // Upload the texture data to the GPU
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glBindTexture(GL_TEXTURE_2D, 0); // Unbind the texture
+
+            // Free image data
+            stbi_image_free(data);
+
+            return texID;
+        }
 
 
 
@@ -249,6 +288,12 @@ public:
         glGenTextures(1, &textureID);
         glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
         int width, height, nrComponents;
         for (unsigned int i = 0; i < faces.size(); i++)
         {
@@ -264,11 +309,6 @@ public:
                 stbi_image_free(data);
             }
         }
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         GLuint cubeMapTexture = textureID;
 
         
@@ -284,6 +324,13 @@ public:
         glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 
 
+        //PBR TEXTURES
+        GLuint albedoTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Color.png");
+        GLuint normalTexture = loadTexture("resources/pbr/Foil002_1K-PNG_NormalGL.png");
+        GLuint metallicTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Metalness.png");
+        GLuint roughnessTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Roughness.png");
+        GLuint aoTexture = loadTexture("resources/pbr/Foil002_1K-PNG_AmbientOcclusion.png");
+        //GLuint displacementTexture = loadTexture("resources/pbr/Foil002_1K-PNG_Displacement.png");
 
 
         /////////////MAIN LOOP////////////////
@@ -423,7 +470,7 @@ public:
                
 
             for (GPUMesh& mesh : m_meshes) {
-                if (!kd && !bphong) {
+                if (!kd && !bphong && !pbr) {
                     m_defaultShader.bind();
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
@@ -453,7 +500,39 @@ public:
 
                         mesh.draw(m_kdShader);
                     }
-                    else {
+                    else if (pbr) {
+                        m_pbrShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glActiveTexture(GL_TEXTURE12);
+                        glBindTexture(GL_TEXTURE_2D, albedoTexture);
+                        glUniform1i(3, 12);
+
+                        glActiveTexture(GL_TEXTURE13);
+                        glBindTexture(GL_TEXTURE_2D, normalTexture);
+                        glUniform1i(4, 13);
+
+                        glActiveTexture(GL_TEXTURE14);
+                        glBindTexture(GL_TEXTURE_2D, metallicTexture);
+                        glUniform1i(5, 14);
+
+                        glActiveTexture(GL_TEXTURE15);
+                        glBindTexture(GL_TEXTURE_2D, roughnessTexture);
+                        glUniform1i(6, 15);
+
+                        glActiveTexture(GL_TEXTURE16);
+                        glBindTexture(GL_TEXTURE_2D, aoTexture);
+                        glUniform1i(7, 16);
+
+                        glUniform3fv(8, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                        glUniform3fv(9, 1, glm::value_ptr(glm::vec3{1.0, 1.0f, 1.0f}));
+                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0, 1.0f, 1.0f }));
+                        glUniform3fv(11, 1, glm::value_ptr(camera.cameraPos()));
+                        mesh.draw(m_pbrShader);
+                    }
+                    else{
                         m_bphongShader.bind();
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
@@ -585,11 +664,11 @@ public:
                             glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                             glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                             glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
                             glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-
+                        
                             mesh.draw(m_kdShader);
                         }
+
                         else {
                             m_bphongShader.bind();
                             glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
@@ -632,6 +711,15 @@ public:
                                 glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
 
                                 mesh.draw(m_kdShader);
+                            }
+                            else if (pbr) {
+                                glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+                                glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                                glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                                glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnAttenuation()));
+
                             }
                             else {
                                 m_bphongShader.bind();
@@ -768,12 +856,22 @@ public:
             moving = true;
             forward = false;
             break;
+        case GLFW_KEY_I:
+            pbr = !pbr;
+            kd = false;
+            bphong = false;
+            std::cout << "PBR is " << pbr << std::endl;
+            break;
         case GLFW_KEY_P:
             kd = !kd;
+            pbr = false;
+            bphong = false;
             std::cout << "Kd is " << kd << std::endl;
             break;
         case GLFW_KEY_O:
             bphong = !bphong;
+            kd = false;
+            pbr = false;
             std::cout << "blinn phong is " << bphong << std::endl;
             break;
         case GLFW_KEY_C:
@@ -838,6 +936,7 @@ private:
     Shader m_kdShader;
     Shader m_bphongShader;
     Shader m_shadowShader;
+    Shader m_pbrShader;
     Shader m_skyboxShader;
     Shader m_environmentShader;
     Shader m_sunShader;
@@ -877,6 +976,7 @@ private:
     bool forward;
     bool kd;
     bool bphong;
+    bool pbr;
     bool inAnimation;
     bool centerSkybox;
     bool procedural;
@@ -902,7 +1002,6 @@ private:
     Light light;
     
 };
-
 
 
 int main()

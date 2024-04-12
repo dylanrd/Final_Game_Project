@@ -12,18 +12,18 @@ layout(location = 2) in vec2 texCoord;
 layout(location = 3) in vec3 tangent;
 
 
-out vec3 fragPosition;
+out vec3 fragPos;
 out vec3 fragNormal;
-out vec2 fragTexCoord;
+out vec2 TexCoords;
 out mat3 TBN;
 
 void main()
 {
     gl_Position = mvpMatrix * vec4(position, 1);
     
-    fragPosition = (modelMatrix * vec4(position, 1)).xyz;
+    fragPos = (modelMatrix * vec4(position, 1)).xyz;
 
-    fragTexCoord = texCoord;
+    TexCoords = texCoord;
     // Calculate the Normal, Tangent, and Bitangent vectors
     vec3 N = normalize(normalModelMatrix * normal);
     vec3 T = normalize(vec3(modelMatrix * vec4(tangent, 0.0)));

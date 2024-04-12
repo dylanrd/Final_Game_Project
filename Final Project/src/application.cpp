@@ -767,9 +767,7 @@ public:
                     
                     glUniform1i(3, i + 3);
                     
-                    glUniform1i(4, GL_TRUE);
-                    glUniform1i(5, GL_FALSE);
-                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
+                   
                     glUniform1f(7, dayFactor);
                     mesh.draw(m_skyboxShader);
                 }

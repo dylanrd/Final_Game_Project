@@ -1,5 +1,13 @@
 #version 450 core
 
+layout(std140) uniform Material // Must match the GPUMaterial defined in src/mesh.h
+{
+    vec3 kd;
+	vec3 ks;
+	float shininess;
+	float transparency;
+};
+
 // Inputs from vertex shader
 in vec3 fragPos;
 in vec3 fragNormal;

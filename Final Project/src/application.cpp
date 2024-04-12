@@ -549,8 +549,6 @@ public:
             glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)1024 / (float)1024, 0.1f, 100.0f);
             
 
-
-
             GLint origViewport[4];
             glGetIntegerv(GL_VIEWPORT, origViewport);
 
@@ -562,24 +560,55 @@ public:
 
             {
                 for (GPUMesh& mesh : m_meshes) {
+                    if (pbr) {
+                        m_pbrShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(miniMVP));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                    m_bphongShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(miniMVP));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
+                        glActiveTexture(GL_TEXTURE20);
+                        glBindTexture(GL_TEXTURE_2D, albedoTexture);
+                        glUniform1i(4, 20);
 
+                        glActiveTexture(GL_TEXTURE21);
+                        glBindTexture(GL_TEXTURE_2D, normalTexture);
+                        glUniform1i(5, 21);
 
-                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+                        glActiveTexture(GL_TEXTURE22);
+                        glBindTexture(GL_TEXTURE_2D, metallicTexture);
+                        glUniform1i(6, 22);
 
-                    mesh.draw(m_bphongShader);
+                        glActiveTexture(GL_TEXTURE23);
+                        glBindTexture(GL_TEXTURE_2D, roughnessTexture);
+                        glUniform1i(7, 23);
 
+                        glActiveTexture(GL_TEXTURE24);
+                        glBindTexture(GL_TEXTURE_2D, aoTexture);
+                        glUniform1i(8, 24);
+
+                        glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
+                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0f, 1.0f, 1.0f }));
+                        glUniform1f(11, 255.0f);
+                        glUniform3fv(12, 1, glm::value_ptr(miniMap.cameraPos()));
+                        mesh.draw(m_pbrShader);
+                    }
+                    else {
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(miniMVP));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                        mesh.draw(m_bphongShader);
+                    }
                 }
 
                 ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
 
-                glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -14    , -2.5, 50 }), glm::vec3(2));
+                glm::mat4 billBoardTranslationMatrix = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3{ -14, -2.5, 50 }), glm::vec3(2));
                 glm::mat4 boardRotationMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
                 glm::mat4 boardModelMatrix = billBoardTranslationMatrix * boardRotationMatrix;
 
@@ -599,64 +628,18 @@ public:
                         mesh.draw(m_defaultShader);
 
                         billboardTexture++;
+                    }   
+                    else {
+                        m_bphongShader.bind();
+                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
+                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
+                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
+
+                        glUniform3fv(6, 3, glm::value_ptr(positions[0]));
+                        glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
+
+                        mesh.draw(m_bphongShader);
                     }
-                    
-            else {
-                if (kd) {
-                    m_kdShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                    glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-
-                    mesh.draw(m_kdShader);
-                }
-                else if (pbr) {
-                    m_pbrShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-
-                    glActiveTexture(GL_TEXTURE20);
-                    glBindTexture(GL_TEXTURE_2D, albedoTexture);
-                    glUniform1i(4, 20);
-
-                    glActiveTexture(GL_TEXTURE21);
-                    glBindTexture(GL_TEXTURE_2D, normalTexture);
-                    glUniform1i(5, 21);
-
-                    glActiveTexture(GL_TEXTURE22);
-                    glBindTexture(GL_TEXTURE_2D, metallicTexture);
-                    glUniform1i(6, 22);
-
-                    glActiveTexture(GL_TEXTURE23);
-                    glBindTexture(GL_TEXTURE_2D, roughnessTexture);
-                    glUniform1i(7, 23);
-
-                    glActiveTexture(GL_TEXTURE24);
-                    glBindTexture(GL_TEXTURE_2D, aoTexture);
-                    glUniform1i(8, 24);
-
-                    glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-                    glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0f, 1.0f, 1.0f }));
-                    glUniform1f(11, 1000.0f);
-                    glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
-                    mesh.draw(m_pbrShader);
-                }
-                else {
-                    m_bphongShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(billBoardMVP));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(boardModelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                    glUniform3fv(6, 3, glm::value_ptr(positions[0]));
-                    glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
-
-                    mesh.draw(m_bphongShader);
-                }
-            }
                 }
                 
 
@@ -666,8 +649,6 @@ public:
 
                 glm::mat4 translationMatrixArm1 = glm::translate(glm::mat4(1.0f), glm::vec3{ 15,0,0 });
                 for (GPUMesh& mesh : arm) {
-
-
                     m_modelMatrix = translationMatrixArm1;
                     const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 
@@ -680,7 +661,6 @@ public:
                     glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
                     mesh.draw(m_bphongShader);
-
 
                 }
 
@@ -703,10 +683,7 @@ public:
                         glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
                         mesh.draw(m_bphongShader);
-
-
                     }
-
                 }
 
                 glm::vec4 newLightPos = glm::vec4(light.returnLight()[0].returnPos(), 1);
@@ -802,12 +779,11 @@ public:
 
                     glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
                     glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0f, 1.0f, 1.0f }));
-                    glUniform1f(11, 255.0f);
+                    glUniform1f(11, 1000.0f);
                     glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
                     mesh.draw(m_pbrShader);
                 } 
                 else {
-
                     m_bphongShader.bind();
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                     glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));

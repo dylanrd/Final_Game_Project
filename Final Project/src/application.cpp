@@ -566,7 +566,7 @@ public:
             ////////////////////////////////////////////////////////////////////////////////////////////////////
 
             {
-                for (GPUMesh& mesh : m_meshes) {
+                /*for (GPUMesh& mesh : m_meshes) {
 
                     m_bphongShader.bind();
                     glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(miniMVP));
@@ -580,7 +580,7 @@ public:
 
                     mesh.draw(m_bphongShader);
 
-                }
+                }*/
 
                 ///////////////////////////////////////////////////// BILLBOARD //////////////////////////////////////////////////////////////////////////
 
@@ -770,8 +770,13 @@ public:
 
                         glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
                         glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0f, 1.0f, 1.0f }));
-                        glUniform1f(11, 1000.0f);
-                        glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
+                        glUniform1f(11, 2000.0f);
+                        if (!cam1) {
+                            glUniform3fv(12, 1, glm::value_ptr(light_camera.cameraPos()));                             
+                        }
+                        else {
+                            glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
+                        }
                         mesh.draw(m_pbrShader);
                     }
                     else {
@@ -1086,11 +1091,15 @@ public:
             break;
             std::cout << "playing animation: " << inAnimation << std::endl;
             break;
-
+        case GLFW_KEY_C:
+            inAnimation = !inAnimation;
+            std::cout << "playing animation: " << inAnimation << std::endl;
+            break;
         case GLFW_KEY_T:
             procedural = !procedural;
-            
+           
             break;
+         
         default:
             break;
         }

@@ -157,18 +157,16 @@ public:
         GLuint loadTexture(const char* filepath) {
             // Load image data
             int width, height, numChannels;
-            unsigned char* data = stbi_load(filepath, &width, &height, &numChannels, 10);
-            if (!data) {
+            unsigned char* texData = stbi_load(filepath, &width, &height, &numChannels, 0);
+            if (!texData) {
                 std::cerr << "Failed to load texture: " << filepath << std::endl;
                 return 0;
             }
 
             // Determine the image format
-            GLenum format;
+            GLenum format = GL_RGB;
             if (numChannels == 1)
                 format = GL_RED;
-            else if (numChannels == 3)
-                format = GL_RGB;
             else if (numChannels == 4)
                 format = GL_RGBA;
 
@@ -184,11 +182,11 @@ public:
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             // Upload the texture data to the GPU
-            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, texData);
             glBindTexture(GL_TEXTURE_2D, 0); // Unbind the texture
 
             // Free image data
-            stbi_image_free(data);
+            stbi_image_free(texData);
 
             return texID;
         }
@@ -506,23 +504,23 @@ public:
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
                         glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
 
-                        glActiveTexture(GL_TEXTURE12);
+                        glActiveTexture(GL_TEXTURE20);
                         glBindTexture(GL_TEXTURE_2D, albedoTexture);
                         glUniform1i(3, 12);
 
-                        glActiveTexture(GL_TEXTURE13);
+                        glActiveTexture(GL_TEXTURE21);
                         glBindTexture(GL_TEXTURE_2D, normalTexture);
                         glUniform1i(4, 13);
 
-                        glActiveTexture(GL_TEXTURE14);
+                        glActiveTexture(GL_TEXTURE22);
                         glBindTexture(GL_TEXTURE_2D, metallicTexture);
                         glUniform1i(5, 14);
 
-                        glActiveTexture(GL_TEXTURE15);
+                        glActiveTexture(GL_TEXTURE23);
                         glBindTexture(GL_TEXTURE_2D, roughnessTexture);
                         glUniform1i(6, 15);
 
-                        glActiveTexture(GL_TEXTURE16);
+                        glActiveTexture(GL_TEXTURE24);
                         glBindTexture(GL_TEXTURE_2D, aoTexture);
                         glUniform1i(7, 16);
 

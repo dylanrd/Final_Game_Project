@@ -1,51 +1,46 @@
 #version 450
 
-layout(location = 0)in vec3 fragPos;  // Fragment position in world space
-layout(location = 1)in vec3 normal;   // Normal in world space
-layout(location = 2)in vec2 TexCoords;
+in vec3 fragPos;
+in vec3 worldNormal;  // Now explicitly called worldNormal fo
+in vec2 TexCoords;
+in mat3 TBN;  // TBN matrix passed from vertex shader
 
-// Material properties
 layout(location = 3) uniform sampler2D albedoMap;
 layout(location = 4) uniform sampler2D normalMap;
 layout(location = 5) uniform sampler2D metallicMap;
 layout(location = 6) uniform sampler2D roughnessMap;
 layout(location = 7) uniform sampler2D aoMap;
 
-// Light properties
 layout(location = 8) uniform vec3 lightPos;
 layout(location = 9) uniform vec3 lightColor;
 layout(location = 10) uniform float lightIntensity;
-layout(location = 11) uniform vec3 camPos; // Camera position for specular calculation
-
+layout(location = 11) uniform vec3 camPos;
 
 out vec4 color;
 
-// Utility functions for PBR
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
-
-// Calculates direct lighting
 vec3 CalculateDirectLight(vec3 N, vec3 V, vec3 L, vec3 albedo, float metallic, float roughness, float ao);
 
 void main() {
-    // Fetch material properties from textures
     vec3 albedo = texture(albedoMap, TexCoords).rgb;
     float metallic = texture(metallicMap, TexCoords).r;
     float roughness = texture(roughnessMap, TexCoords).r;
     float ao = texture(aoMap, TexCoords).r;
-    vec3 N = normalize(normal); // Assuming normal is passed in world space
+
+    vec3 normalFromMap = texture(normalMap, TexCoords).rgb;
+    normalFromMap = normalFromMap * 2.0 - 1.0; // Transform from [0, 1] to [-1, 1]
+    vec3 N = normalize(TBN * normalFromMap);  // Transform normal from tangent to world space
 
     vec3 V = normalize(camPos - fragPos);
     vec3 L = normalize(lightPos - fragPos);
-    vec3 H = normalize(V + L);
 
-    // Calculate direct lighting
     vec3 lighting = CalculateDirectLight(N, V, L, albedo, metallic, roughness, ao);
-
     color = vec4(lighting, 1.0);
 }
+
 
 // Implementation of the utility functions used above
 

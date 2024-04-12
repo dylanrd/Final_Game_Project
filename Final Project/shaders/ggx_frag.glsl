@@ -9,9 +9,9 @@ layout(std140) uniform Material // Must match the GPUMaterial defined in src/mes
 };
 
 // Inputs from vertex shader
-in vec3 fragPos;
+in vec3 fragPosition;
 in vec3 fragNormal;
-in vec2 TexCoords;
+in vec2 fragTexCoord;
 in mat3 TBN;
 
 // Textures
@@ -32,82 +32,71 @@ layout(location = 12) uniform vec3 camPos;
 // Output color
 out vec4 color;
 
-// Constants
-const float pi = 3.14159265359;
-
-// Function prototypes
-vec3 getNormalFromMap();
-float distributionGGX(vec3 N, vec3 H, float roughness);
-float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
-
-void main() {
-    // Extract data from maps
-    vec3 albedo = texture(albedoMap, TexCoords).rgb;
-    float metallic = texture(metallicMap, TexCoords).r;
-    float roughness = texture(roughnessMap, TexCoords).r;
-    float ao = texture(aoMap, TexCoords).r;
-
-    // Get normals from map and blend with vertex normals
-    vec3 texNormal = getNormalFromMap();
-    vec3 normal = normalize(mix(fragNormal, texNormal, 0.5));  // Ensure the blend is correct
-
-    // Correct normal orientation if inverted (add a check or manual inversion if necessary)
-    if (dot(normal, fragNormal) < 0.0) {
-        normal = -normal;  // Invert the normal if it's flipped
-    }
-
-    vec3 V = normalize(camPos - fragPos);
-    vec3 L = normalize(lightPos - fragPos);
-    vec3 H = normalize(V + L);
-
-    vec3 F0 = mix(vec3(0.04), albedo, metallic);
-    float NdotV = max(dot(normal, V), 0.0);
-
-    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-    float D = distributionGGX(normal, H, roughness);
-    float G = geometrySmith(normal, V, L, roughness);
-
-    vec3 nominator = F * G * D;
-    float denominator = max(4.0 * NdotV * max(dot(normal, L), 0.0), 0.001);
-    vec3 specular = nominator / denominator;
-
-    float attenuation = clamp(lightIntensity / (length(lightPos - fragPos) * length(lightPos - fragPos)),0.1f, 1.0f);
-    vec3 radiance = lightColor * attenuation;
-
-    // Correct diffuse component
-    vec3 diffuse = (1.0 - max(dot(F, vec3(0.04)), 0.0)) * albedo * max(dot(normal, L), 0.0) * radiance;
-    vec3 ambient = ao * albedo * vec3(0.03);
-
-    //vec3 n1 = texture(normalMap, TexCoords).rgb;
-    //color = vec4(n1, 1.0);
-    color = vec4(diffuse + specular + ambient, 1.0);
-}
-
-
-// Functions
-vec3 getNormalFromMap() {
-    vec3 normal = texture(normalMap, TexCoords).rgb;
-    normal = normalize(normal * 2.0 - 1.0);  // Unpack the normal
-    return normalize(TBN * normal);
-}
-
-float distributionGGX(vec3 N, vec3 H, float roughness) {
+// Function to compute GGX distribution
+float GGXDistribution(float NdotH, float roughness) {
     float a = roughness * roughness;
     float a2 = a * a;
-    float NdotH = max(dot(N, H), 0.0);
-    float denom = (NdotH * NdotH) * (a2 - 1.0) + 1.0;
-    return a2 / (pi * denom * denom);
+    float NdotH2 = NdotH * NdotH;
+    float denom = NdotH2 * (a2 - 1.0) + 1.0;
+    return a2 / (3.14159265 * denom * denom);
 }
 
-float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
-    float NdotV = max(dot(N, V), 0.01);
-    float NdotL = max(dot(N, L), 0.01);
-    float ggxV = NdotV * (1.0 - roughness) + roughness;
-    float ggxL = NdotL * (1.0 - roughness) + roughness;
-    return 1.0 / (ggxV * ggxL);
+// Geometry function using Smith's method
+float GeometrySchlickGGX(float NdotV, float roughness) {
+    float r = roughness + 1.0;
+    float k = (r * r) / 8.0;
+    float denom = NdotV * (1.0 - k) + k;
+    return NdotV / denom;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0) {
+// Geometry combining function
+float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx1 = GeometrySchlickGGX(NdotV, roughness);
+    float ggx2 = GeometrySchlickGGX(NdotL, roughness);
+    return ggx1 * ggx2;
+}
+
+// Fresnel function using Schlick's approximation
+vec3 FresnelSchlick(float cosTheta, vec3 F0) {
     return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
+}
+
+void main() {
+    vec3 albedo = texture(albedoMap, fragTexCoord).rgb;
+    vec3 N = normalize(TBN * (texture(normalMap, fragTexCoord).rgb * 2.0 - 1.0));
+    float metallic = texture(metallicMap, fragTexCoord).r;
+    float roughness = texture(roughnessMap, fragTexCoord).r;
+    float ao = texture(aoMap, fragTexCoord).r;
+
+    vec3 V = normalize(camPos - fragPosition);
+    vec3 L = normalize(lightPos - fragPosition);
+    vec3 H = normalize(V + L);
+
+    float NdotL = max(dot(N, L), 0.0);
+    float NdotV = max(dot(N, V), 0.0);
+    float NdotH = max(dot(N, H), 0.0);
+    float LdotH = max(dot(L, H), 0.0);
+
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+    float D = GGXDistribution(NdotH, roughness);
+    float G = GeometrySmith(N, V, L, roughness);
+
+    vec3 numerator = D * F * G;
+    float denominator = 4.0 * NdotV * NdotL + 0.0001; // Avoid divide by zero
+    vec3 specular = numerator / denominator;
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 irradiance = lightColor * lightIntensity;
+    vec3 diffuse = kD * albedo / 3.14159265;
+
+    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 radiance = NdotL * irradiance * (diffuse + specular) + ambient;
+
+    color = vec4(radiance, 1.0);
 }

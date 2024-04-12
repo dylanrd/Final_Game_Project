@@ -13,6 +13,8 @@ DISABLE_WARNINGS_POP()
 #include <framework/shader.h>
 #include <iostream>
 
+
+bool hGcreated = false;
 int texWidth, texHeight, texChannels;
 /*stbi_uc* pixels = stbi_load("resources/gravel.png", &texWidth, &texHeight, &texChannels, 3);*/
 int normalWidth, normalHeight, normalChannels;
@@ -24,21 +26,20 @@ stbi_uc* normal_map = stbi_load("resources/Gravel_001_Normal.jpg", &normalWidth,
 
 HeightGenerator hgBase;
 
-int heightWidth, heightHeight, heightChannels;
-stbi_uc* height_map = stbi_load("resources/Gravel_001_Height.png", &heightWidth, &heightHeight, &heightChannels, 3);
 
 
 Terrain::Terrain(void)
 {
+
 }
 
-void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural) {
+void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool procedural, int car) {
 	int SIZE = 800;
 	const int VERTEX_COUNT = 128;
 	int MAX_HEIGHT = 20;
 	int MIN_HEIGHT = -5;
 
-	
+
 	int vertexPointer = 0;
 	std::vector<terrainVertex> vertices2;
 	std::vector<glm::uvec3> triangles;
@@ -51,31 +52,31 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 				if (!hGcreated) {
 					hgBase.changeSeed();
 					hGcreated = true;
-					
+
 				}
-				
-					vert2 = hgBase.generateHeight(i, j);
-				
-				
+
+				vert2 = hgBase.generateHeight(i, j);
+
+
 			}
 			else {
 				vert2 = 0;
 				hGcreated = false;
 			}
-			
+
 			//std::cout << vert1 << std::endl;
-			if ((float)SIZE / 2.f - 20.f < vert1 ) {
+			if ((float)SIZE / 2.f - 20.f < vert1) {
 				if ((float)SIZE / 2.f + 20.f > vert1) {
 					vert2 = 0;
-					
+
 				}
 			}
 
 			float vert3 = (float)i / ((float)VERTEX_COUNT - 1) * SIZE;
-			
-			
-			float text1 = (float) j / ((float)VERTEX_COUNT - 1);
-			float text2 = (float) i / ((float)VERTEX_COUNT - 1);
+
+
+			float text1 = (float)j / ((float)VERTEX_COUNT - 1);
+			float text2 = (float)i / ((float)VERTEX_COUNT - 1);
 			vertexPointer++;
 
 			terrainVertex vertex{
@@ -97,9 +98,9 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 			int topRight = topLeft + 1;
 			int bottomLeft = ((gz + 1) * VERTEX_COUNT) + gx;
 			int bottomRight = bottomLeft + 1;
-			
-			triangles.push_back(glm::uvec3{topLeft, bottomLeft, topRight});
-			
+
+			triangles.push_back(glm::uvec3{ topLeft, bottomLeft, topRight });
+
 			triangles.push_back(glm::uvec3{ topRight, bottomLeft, bottomRight });
 		}
 	}
@@ -120,7 +121,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 
 		float f = 1.0f / (DeltaU1 * DeltaV2 - DeltaU2 * DeltaV1);
 
-		
+
 		glm::vec3 Tangent, Bitangent;
 
 		Tangent.x = f * (DeltaV2 * Edge1.x - DeltaV1 * Edge2.x);
@@ -132,7 +133,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 		Bitangent.z = f * (-DeltaU2 * Edge1.z + DeltaU1 * Edge2.z);
 
 
-	
+
 		v0.tangent += Tangent;
 		v1.tangent += Tangent;
 		v2.tangent += Tangent;
@@ -182,9 +183,9 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	ShaderBuilder terrainShader;
 	terrainShader.addStage(GL_VERTEX_SHADER, "shaders/shader_terrain_vert.glsl");
 	terrainShader.addStage(GL_FRAGMENT_SHADER, "shaders/shader_terrain_frag.glsl");
-	
 
-	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE/2,-2.5,-SIZE/4 });
+
+	glm::mat4 translationMatrix = glm::translate(glm::mat4(1.0f), glm::vec3{ -SIZE / 2,-2.5, car * SIZE + -SIZE / 2 });
 	m_modelMatrix = translationMatrix;
 	const glm::mat4 mvpMatrix = m_projectionMatrix * view * m_modelMatrix;
 	// Normals should be transformed differently than positions (ignoring translations + dealing with scaling):
@@ -195,7 +196,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
 	glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
 	glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-		
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texLight);
 	glUniform1i(3, 0);
@@ -205,24 +206,24 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glUniform1i(4, 1);
 
 
-	glm::vec3 positions[2];
-	
-	for (int i = 0; i < 2; i++) {
+	glm::vec3 positions[3];
+
+	for (int i = 0; i < 3; i++) {
 		positions[i] = lights[i].returnPos();
 	}
-	
-	glUniform3fv(7, 2, glm::value_ptr(positions[0]));
 
-	glm::vec3 attenuation[2];
+	glUniform3fv(7, 3, glm::value_ptr(positions[0]));
 
-	for (int i = 0; i < 2; i++) {
+	glm::vec3 attenuation[3];
+
+	for (int i = 0; i < 3; i++) {
 		attenuation[i] = lights[i].returnAttenuation();
 	}
 
-	glUniform3fv(11, 2, glm::value_ptr(attenuation[0]));
+	glUniform3fv(11, 3, glm::value_ptr(attenuation[0]));
 
 	GLuint VAO, VBO, IBO;
-	
+
 	glCreateBuffers(1, &IBO);
 	glNamedBufferStorage(IBO, static_cast<GLsizeiptr>(triangles.size() * sizeof(decltype(triangles)::value_type)), triangles.data(), 0);
 
@@ -256,7 +257,7 @@ void Terrain::renderTerrain(glm::mat4 view, std::vector<Light> lights, bool proc
 	glVertexArrayAttribBinding(VAO, 2, 0);
 	glVertexArrayAttribBinding(VAO, 3, 0);
 	glBindVertexArray(0);
-	
+
 	glBindVertexArray(VAO);
 	//glDrawArrays(GL_TRIANGLES, 0, vertices2.size() / 3);
 	glDrawElements(GL_TRIANGLES, triangles.size() * 3, GL_UNSIGNED_INT, nullptr);
@@ -294,6 +295,3 @@ void Terrain::terrainTexture() {
 	glNamedFramebufferTexture(framebuffer, GL_DEPTH_ATTACHMENT, texLight, 0);
 
 }
-
-
-

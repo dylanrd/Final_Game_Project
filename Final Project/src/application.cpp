@@ -530,7 +530,7 @@ public:
 
                         glUniform3fv(9, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
                         glUniform3fv(10, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f}));
-                        glUniform1f(11, 255.0f);
+                        glUniform1f(11, 1000.0f);
                         glUniform3fv(12, 1, glm::value_ptr(camera.cameraPos()));
                         mesh.draw(m_pbrShader);
                     }

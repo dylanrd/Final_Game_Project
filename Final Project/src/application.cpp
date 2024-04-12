@@ -506,27 +506,27 @@ public:
 
                         glActiveTexture(GL_TEXTURE20);
                         glBindTexture(GL_TEXTURE_2D, albedoTexture);
-                        glUniform1i(3, 12);
+                        glUniform1i(3, 20);
 
                         glActiveTexture(GL_TEXTURE21);
                         glBindTexture(GL_TEXTURE_2D, normalTexture);
-                        glUniform1i(4, 13);
+                        glUniform1i(4, 21);
 
                         glActiveTexture(GL_TEXTURE22);
                         glBindTexture(GL_TEXTURE_2D, metallicTexture);
-                        glUniform1i(5, 14);
+                        glUniform1i(5, 22);
 
                         glActiveTexture(GL_TEXTURE23);
                         glBindTexture(GL_TEXTURE_2D, roughnessTexture);
-                        glUniform1i(6, 15);
+                        glUniform1i(6, 23);
 
                         glActiveTexture(GL_TEXTURE24);
                         glBindTexture(GL_TEXTURE_2D, aoTexture);
-                        glUniform1i(7, 16);
+                        glUniform1i(7, 24);
 
                         glUniform3fv(8, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-                        glUniform3fv(9, 1, glm::value_ptr(glm::vec3{1.0, 1.0f, 1.0f}));
-                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{ 1.0, 1.0f, 1.0f }));
+                        glUniform3fv(9, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f}));
+                        glUniform3fv(10, 1, glm::value_ptr(glm::vec3{1.0f, 1.0f, 1.0f }));
                         glUniform3fv(11, 1, glm::value_ptr(camera.cameraPos()));
                         mesh.draw(m_pbrShader);
                     }

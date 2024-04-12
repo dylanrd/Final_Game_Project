@@ -740,36 +740,8 @@ public:
 
 
             for (GPUMesh& mesh : m_meshes) {
-                if (!kd && !bphong && !pbr) {
-                    m_defaultShader.bind();
-                    glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                    glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                    glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-                    if (mesh.hasTextureCoords()) {
-                        glUniform1i(3, 0);
-                        glUniform1i(4, GL_TRUE);
-                        glUniform1i(5, GL_FALSE);
-                    }
-                    else {
-                        glUniform1i(4, GL_FALSE);
-                        glUniform1i(5, GL_TRUE);
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[0].returnPos()));
-                    }
-                    mesh.draw(m_defaultShader);
-
-                }
-                else {
-                    if (kd) {
-                        m_kdShader.bind();
-                        glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
-                        glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
-                        glUniformMatrix3fv(2, 1, GL_FALSE, glm::value_ptr(normalModelMatrix));
-
-                        glUniform3fv(6, 1, glm::value_ptr(light.returnLight()[2].returnPos()));
-
-                        mesh.draw(m_kdShader);
-                    }
-                    else if (pbr) {
+                
+                    if (pbr) {
                         m_pbrShader.bind();
                         glUniformMatrix4fv(0, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
                         glUniformMatrix4fv(1, 1, GL_FALSE, glm::value_ptr(m_modelMatrix));
@@ -813,7 +785,7 @@ public:
                         mesh.draw(m_bphongShader);
 
                     }
-                }
+                
 
             }
 
